@@ -2,7 +2,7 @@
   <img src="openclass.ico" width="96" height="96" alt="OpenClass Logo">
 </p>
 
-<h1 align="center">OpenClass — 教师课堂工具箱</h1>
+<h1 align="center">OpenTool — 教师课堂工具箱</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python">
