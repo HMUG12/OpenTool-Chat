@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="openclass.ico" width="96" height="96" alt="OpenClass Logo">
-</p>
 
 <h1 align="center">OpenTool — 教师课堂工具箱</h1>
 
