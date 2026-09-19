@@ -36,3 +36,19 @@ Thumbs.db
 venv/
 .venv/
 env/
+
+# ── 前端依赖与构建产物 ──
+frontend/node_modules/
+frontend/.vite/
+frontend/package-lock.json
+
+# ── 运行时数据（便携模式下跟随程序目录生成） ──
+data/
+
+# ── 打包产物与便携工具（体积大，不入库）──
+dist_build/
+build_build/
+tools/
+installer/
+installer_iscc.log
+installer_iscc.err

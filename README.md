@@ -1,277 +1,147 @@
+# OpenClass
 
-<h1 align="center">OpenTool — 教师课堂工具箱</h1>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/PySide6-6.6%2B-green?logo=qt" alt="PySide6">
-  <img src="https://img.shields.io/badge/qfluentwidgets-1.5%2B-purple" alt="qfluentwidgets">
-  <img src="https://img.shields.io/badge/license-MIT-orange" alt="License">
-  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-blue?logo=windows" alt="Platform">
-  <img src="https://img.shields.io/badge/version-2.0.0-brightgreen" alt="Version">
-</p>
-
-<p align="center">
-  一款面向教师的 Windows 桌面工具箱，集成课堂互动、电教管理、AI 辅助与系统运维功能。<br>
-  基于 PySide6 + qfluentwidgets 构建，触控大屏友好，支持深色/浅色主题切换。
-</p>
+Windows 桌面工具箱。收录实用小工具，并提供一套零配置的插件机制：
+把一个工具文件夹放进 `tools/`，它就会出现在界面上，无需改动任何代码。
 
 ---
 
-## 功能概览
+## 功能
 
-### 实用课堂
-
-| 工具 | 说明 |
+| 模块 | 说明 |
 |------|------|
-| 随机点名 | 老虎机动效滚动抽取，支持排除已点 + 空格键触发 |
-| 全屏计时器 | 正计时 / 倒计时，全屏超大数字 + 铃声提醒 |
-| 批注白板 | 半透明全屏画布，触摸 / 数位笔 / 鼠标涂鸦 |
-| **课程表悬浮窗** | 桌面置顶悬浮窗，磨砂背景，当前课程高亮闪烁，可拖拽/收起 |
-| 视频播放 | VLC 内核视频播放器，播放/暂停/全屏/播放列表 |
-| 音频播放 | 本地音乐播放器，QMediaPlayer + 播放列表 + 进度控制 |
-| 解压工具 | 多格式解压 (7z/ZIP/RAR)，密码支持，QThread 异步 |
-| 音频转换 | 音频格式批量转换 (MP3/WAV/FLAC/OGG)，pydub + FFmpeg |
+| 系统状态 | CPU / 内存 / 存储用量、网络实时速率曲线、IP 与网关、硬件明细、网卡列表 |
+| 工具箱 | 已收录工具的网格视图，支持分类筛选与关键词搜索 |
+| 插件 | 列出外部工具与插件，可重新扫描或打开工具目录 |
+| 设置 | 浅色 / 深色 / 跟随系统，偏好保存在程序目录 |
+| 关于 | 运行环境与路径信息 |
 
-### 插件中心
+### 系统状态页
 
-| 插件 | 说明 |
-|------|------|
-| 函数几何画板 | pyqtgraph 数学函数可视化，多函数叠加绘制 |
-| 符号计算器 | SymPy 符号运算，表达式求值/化简/微积分 |
-| 电子课程表 | JSON 持久化周课程表，桌面悬浮窗显示 |
+主页展示三类实时监测：
 
-> 插件系统支持：一键导入 `.zip` 插件包、启用/禁用开关、卸载管理、完整日志追踪。
+- **硬件**：处理器型号、核心线程数、频率、内存与交换分区、磁盘分区用量、显示适配器、主板、启动时间
+- **网络**：每秒下行 / 上行速率（双曲线，纵轴共享以保可比）、累计收发、网卡 IPv4/MAC/速率
+- **IP**：主机名、局域网 IP、默认网关、DNS，公网 IP 需手动触发查询
 
-### 电教工具
-
-| 工具 | 说明 |
-|------|------|
-| KMS 激活 | KMS 批量激活 + HWID 永久激活，五步顺序执行 + 实时日志 |
-| 系统信息 | 真实硬件采集（CPU/内存/磁盘），进度条可视化，注册表读取 |
-| 网络测速 | 测试当前网络上下行速度与延迟（敬请期待） |
-| 屏幕录制 | 录制课堂屏幕内容保存为视频文件（敬请期待） |
-
-### AI Agent
-
-| 功能 | 说明 |
-|------|------|
-| 多模型对话 | SSE 流式输出，支持 OpenAI 兼容 API，自定义供应商 |
-| 会话管理 | 历史会话分组（今天/昨天/更早），持久化存储 |
-| 键鼠代理 | Agent 控制键盘鼠标执行桌面操作 |
-| 文件解析 | 拖放 PDF / DOCX 文件，自动提取文本注入上下文 |
-
-### 设置
-
-| 功能 | 说明 |
-|------|------|
-| 主题切换 | 深色 / 浅色 / 护眼绿 |
-| API 配置 | 加密存储 AI 供应商密钥 (AES) |
-| 班级管理 | 班级/学生名单增删改查，Excel 导入导出 |
-| 插件管理 | 表格形式查看已安装插件，支持卸载 |
-| 日志管理 | 分级日志记录，支持按级别筛选与导出 |
+> 公网 IP 是**唯一依赖网络的动作**。工具箱的主战场是离线环境，
+> 因此该项设计为手动触发 + 多源回退 + 2.5 秒超时，取不到时显示「未获取到」而不是报错。
 
 ---
 
 ## 技术栈
 
-| 类别 | 技术 |
-|------|------|
-| UI 框架 | PySide6 (Qt for Python) |
-| 组件库 | qfluentwidgets（优先）/ 纯 PySide6 降级 |
-| 数据库 | SQLite (WAL 模式) |
-| 加密 | AES-CBC + PBKDF2 密钥派生 |
-| 插件系统 | `plugin.json` 清单 + `importlib` 动态加载 + 完整生命周期管理 |
-| 多媒体 | python-vlc (视频)、QMediaPlayer (音频)、pydub (音频转换) |
-| 压缩 | py7zr / zipfile / rarfile |
-| 数学 | pyqtgraph (函数绘图)、SymPy (符号计算) |
-| 系统调用 | ctypes Win32 API / psutil / winreg |
-| 文档解析 | PyPDF2, python-docx |
-| 打包 | PyInstaller (--onefile) + Inno Setup 6 |
+| 层 | 选型 |
+|---|---|
+| 界面渲染 | WebView2（Windows 10/11 系统组件，无需打包 Chromium） |
+| 前端 | React 18 + TypeScript + Vite + Fluent UI v9 |
+| 宿主 | Python + `pywebview` |
+| 系统监测 | `psutil` + WMI（PowerShell CIM）+ `ipconfig` |
+| 打包 | PyInstaller（`--onedir`，绿色便携） |
+
+业务逻辑在 Python 侧；工具全部以**独立进程**启动，崩溃不会拖垮主界面。
 
 ---
 
 ## 快速开始
 
-### 环境要求
+### 1. 安装依赖
 
-- Windows 10/11 (64-bit)
-- Python 3.10 及以上
-- **VLC 媒体播放器**（视频播放功能需要，[下载地址](https://www.videolan.org/vlc/)）
-- **FFmpeg**（音频转换功能需要）
-
-### 安装依赖
-
-```bash
-git clone https://github.com/HMUG12/OpenClass.git
-cd OpenClass
+```powershell
 pip install -r requirements.txt
 ```
 
-### 运行
+### 2. 构建前端（只需在前端有改动时执行）
 
-```bash
-python main.py
+```powershell
+cd frontend
+npm install
+npm run build
 ```
 
-首次启动会显示 Splash 加载动画，自动初始化数据库和配置文件。
+### 3. 运行
+
+```powershell
+python main.py          # 加载 frontend/dist
+python main.py --dev    # 连接 localhost:5173，配合 npm run dev 做热更新
+python main.py --debug  # 开启 WebView 调试
+```
+
+### 4. 健康检查
+
+```powershell
+python scripts/smoke.py
+```
+
+不启动界面，验证路径解析、工具注册、配置读写与系统监测是否正常。
 
 ---
 
-## 插件系统
-
-### 插件规范
-
-每个插件是一个独立文件夹，包含 `plugin.json` 清单和 `main.py` 入口：
-
-```json
-{
-  "id": "my_plugin",
-  "name": "我的插件",
-  "version": "1.0.0",
-  "author": "作者名",
-  "description": "插件描述",
-  "icon": "🔧",
-  "main": "main.py",
-  "class": "MyPluginWidget"
-}
-```
-
-`main.py` 中导出 `PluginWidget(QWidget)` 类，可选提供 `back_requested` 信号返回启动台。
-
-### 安装插件
-
-1. 将插件文件夹打包为 `.zip`
-2. 在插件中心点击「导入插件」
-3. 选择 `.zip` 文件即可自动安装
-
----
-
-## 项目结构
+## 目录结构
 
 ```
 OpenClass/
-├── main.py                 # 入口文件
-├── requirements.txt        # Python 依赖
-├── build.py                # PyInstaller 一键打包脚本
-├── setup.iss               # Inno Setup 安装包脚本
-├── openclass.ico           # 应用图标
-├── app/
-│   ├── main_window.py      # 主窗口（FluentWindow / QMainWindow 双模式）
-│   ├── application.py      # 全局应用单例 + 启动流程
-│   ├── splash_screen.py    # Splash 加载动画
-│   ├── database/           # SQLite 数据库 + 加密
-│   │   ├── db_manager.py   # 连接池 & CRUD
-│   │   ├── crypto.py       # AES 加密/解密
-│   │   └── init.sql        # 建表语句
-│   ├── utils/
-│   │   ├── resource.py     # PyInstaller _MEIPASS 路径兼容
-│   │   ├── theme_manager.py# 主题切换 + QSS 加载
-│   │   ├── signal_bus.py   # 全局信号总线
-│   │   ├── config.py       # 配置管理
-│   │   └── plugin_manager.py # 插件生命周期管理
-│   └── views/
-│       ├── classroom/      # 实用课堂
-│       │   ├── launcher_view.py    # 工具卡片启动台
-│       │   ├── random_picker.py    # 随机点名
-│       │   ├── fullscreen_timer.py # 全屏计时器
-│       │   ├── whiteboard.py       # 批注白板
-│       │   └── schedule_float.py   # 课程表悬浮窗
-│       ├── av_tools/       # 电教工具
-│       │   ├── launcher_view.py
-│       │   ├── kms_activation_view.py
-│       │   └── system_info_view.py
-│       ├── agent/          # AI Agent
-│       │   └── agent_page.py
-│       ├── plugin_center/  # 插件中心
-│       │   ├── plugin_center.py    # 插件网格 + 导入
-│       │   └── plugin_card.py     # 插件卡片组件
-│       └── settings/       # 设置页面
-│           ├── settings_page.py
-│           └── log_page.py
-├── plugins/                # 插件目录
-│   ├── function_plotter/   # 函数几何画板
-│   ├── symbolic_calc/      # 符号计算器
-│   ├── schedule/           # 电子课程表
-│   ├── extractor/          # 解压工具
-│   ├── video_player/       # 视频播放器
-│   ├── audio_player/       # 音频播放器
-│   └── audio_converter/    # 音频格式转换
-├── data/                   # 运行时数据（自动生成）
-│   ├── openclass.db        # SQLite 数据库
-│   └── app_config.json     # 用户偏好配置
-└── resources/              # 静态资源
-    └── dark_theme.qss      # 深色主题样式
+├── main.py                 # 入口
+├── backend/
+│   ├── api.py              # 前端 ⇄ Python 的边界
+│   ├── main.py             # pywebview 宿主
+│   └── core/
+│       ├── paths.py        # 单一路径真相（便携：跟随 exe 目录）
+│       ├── config.py       # 偏好持久化
+│       ├── registry.py     # 工具注册表（扫描即发现）
+│       ├── runner.py       # 独立进程启动器（含 UAC 提权）
+│       └── monitor.py      # 硬件 / 网络 / IP 监测
+├── frontend/               # React + Fluent UI
+│   └── src/
+│       ├── App.tsx         # 主布局与主题
+│       ├── api.ts          # 后端调用封装（内置 mock，可脱离宿主预览）
+│       ├── format.ts       # 数值格式化
+│       ├── components/     # SideNav / TitleBar / ToolCard / UsageBar / SparkLine
+│       └── pages/          # Dashboard / Tools / Plugins / Settings / About
+├── tools/                  # 工具目录（详见 tools/README.md）
+└── scripts/smoke.py        # 冒烟检查
 ```
 
 ---
 
-## 打包部署
+## 新增一个工具
 
-### 生成 exe
+在 `tools/` 下建一个文件夹，放入 `tool.json` 与入口文件即可，
+不必修改任何 Python 代码。完整契约见 [`tools/README.md`](tools/README.md)。
 
-```bash
-# 一键打包（自动清理 + 排除冲突模块）
-python build.py
+```json
+{
+  "id": "file_hash",
+  "name": "文件哈希校验",
+  "description": "计算文件的 MD5 / SHA1 / SHA256 / SHA512",
+  "category": "file",
+  "icon": "#️⃣",
+  "version": "1.0.0",
+  "author": "OpenClass",
+  "entry": "main.py"
+}
 ```
 
-> **注意**：PyInstaller 分析阶段需要 5-15 分钟，请耐心等待。必须在普通 PowerShell/CMD 中运行（非管理员终端）。
-
-产物：`dist/OpenClass.exe`（约 100-200 MB 单文件）
-
-### 生成安装包
-
-需安装 [Inno Setup 6](https://jrsoftware.org/isdl.php)，然后执行：
-
-```bash
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
-```
-
-产物：`OpenClass_Setup.exe`（安装到 `Program Files\OpenClass`，自动创建桌面 + 开始菜单快捷方式）
+支持 `.exe` / `.bat` / `.ps1` / `.py`。第三方绿色软件原样拷进去也能被自动识别。
 
 ---
 
-## 常见问题
+## 设计取舍
 
-**Q: 启动后闪退？**
-A: 确保 Python 3.10+ 且已安装所有依赖：`pip install -r requirements.txt`
-
-**Q: 视频播放器提示"VLC 未安装"？**
-A: 前往 [videolan.org](https://www.videolan.org/vlc/) 下载安装 VLC，安装时勾选「添加到系统 PATH」，重启 OpenClass 即可。
-
-**Q: 系统信息显示不全？**
-A: 安装 psutil：`pip install psutil`。若无 psutil，组件会降级使用 ctypes Win32 API 仍可显示大部分信息。
-
-**Q: AI Agent 连接失败？**
-A: 进入「设置」页面，配置有效的 API 地址与密钥。支持 OpenAI 兼容接口。
-
-**Q: 深色主题异常？**
-A: 检查 `resources/dark_theme.qss` 文件是否存在。如缺失，系统会自动降级使用内联样式。
-
-**Q: 插件导入失败？**
-A: 确保插件 `.zip` 包内包含有效的 `plugin.json` 和 `main.py`，且清单中 `id` 字段不与其他插件重复。
+- **便携优先**：数据目录固定在程序所在目录，不使用 `%APPDATA%`，整个文件夹可拷进 U 盘
+- **进程隔离**：工具之间、工具与主程序之间互不影响
+- **离线可用**：除公网 IP 查询外无任何网络依赖
+- **统一采样**：实时指标由后台线程按 1 秒间隔采集并缓存，前端只读快照
 
 ---
 
-## 更新日志
+## 已知限制
 
-### v2.0.0 (2026-06)
-- **新增**插件系统：`plugin.json` 规范 + `PluggableManager` + 插件中心（导入/启用/卸载/日志）
-- **新增**7 个插件：函数几何画板、符号计算器、电子课程表、解压工具、视频播放器、音频播放器、音频转换
-- **新增**课程表桌面悬浮窗：磨砂背景、置顶显示、可拖拽、收起/展开、当前课程高亮闪烁
-- **修复**UI 重叠与闪烁：`setParent(None)` 彻底断开 + `setUpdatesEnabled` 防闪烁
-- **新增**PyInstaller 打包兼容：`_MEIPASS` 路径拆分（只读资源 vs 可写数据）
-
-### v1.0.0 (2026-05)
-- 初始版本：随机点名、全屏计时器、批注白板、KMS 激活、系统信息、AI Agent、设置页面
+- WebView2 运行时在部分老版本 Windows 10（如 LTSC）上可能缺失，需手动安装离线包
+- WMI 查询（显卡 / 主板）首次调用约 1~2 秒，结果缓存，仅影响首屏
+- 尚未提供打包脚本，绿色版需自行用 PyInstaller 以 `--onedir` 方式构建
 
 ---
 
 ## 许可证
 
-MIT License
-
----
-
-<p align="center">
-  Made with PySide6 & qfluentwidgets
-</p>
+MIT License. 见 [LICENSE](LICENSE)。

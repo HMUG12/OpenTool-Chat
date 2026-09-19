@@ -1,0 +1,626 @@
+/* ═══════════════════════════════════════════════════════════
+   OpenClass — 全局样式
+
+   设计规范：Windows 11 Fluent Design
+   刻意克制：小圆角、中性色、单一强调色、无装饰性渐变、高信息密度
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* Fluent 标准圆角，而非「AI 味」的 12~20px 大圆角 */
+  --oc-radius-sm: 3px;
+  --oc-radius: 4px;
+  --oc-radius-lg: 6px;
+
+  --oc-titlebar-h: 36px;
+  --oc-sidenav-w: 224px;
+
+  --oc-border: rgba(128, 128, 128, 0.18);
+  --oc-border-strong: rgba(128, 128, 128, 0.28);
+  --oc-surface: rgba(128, 128, 128, 0.045);
+  --oc-surface-hover: rgba(128, 128, 128, 0.09);
+
+  /* 单一强调色（Fluent brand blue），不出现渐变与多色并用 */
+  --oc-accent: #0f6cbd;
+  --oc-accent-soft: rgba(15, 108, 189, 0.12);
+
+  --oc-positive: #0e700e;
+  --oc-warning: #9a6700;
+  --oc-danger: #c50f1f;
+
+  /* 数值统一使用等宽字体，便于纵向对比 */
+  --oc-mono: 'Cascadia Mono', 'Consolas', 'SF Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI',
+    'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 13px;
+  user-select: none;
+}
+
+.oc-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.oc-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.oc-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.oc-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 28px;
+  animation: oc-fade-in 0.28s ease both;
+}
+
+@keyframes oc-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── 标题栏 ─────────────────────────────────────────── */
+
+.oc-titlebar {
+  height: var(--oc-titlebar-h);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 2;
+  border-bottom: 1px solid var(--oc-border);
+}
+
+.oc-titlebar-drag {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 11px;
+  font-size: 12px;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.oc-titlebar-title {
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.oc-titlebar-actions {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.oc-winbtn {
+  width: 45px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+  color: inherit;
+}
+
+.oc-winbtn:hover {
+  background: rgba(128, 128, 128, 0.14);
+}
+
+.oc-winbtn.close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+/* ── 侧边导航 ───────────────────────────────────────── */
+
+.oc-sidenav {
+  width: var(--oc-sidenav-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 6px 8px;
+  gap: 1px;
+  background: var(--oc-surface);
+  border-right: 1px solid var(--oc-border);
+}
+
+.oc-sidenav-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 10px 14px;
+}
+
+.oc-sidenav-brand-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--oc-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--oc-accent);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.oc-sidenav-brand-name {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.1px;
+}
+
+.oc-sidenav-group {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  opacity: 0.45;
+  padding: 12px 10px 5px;
+}
+
+.oc-navitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--oc-radius);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  width: 100%;
+}
+
+.oc-navitem:hover {
+  background: var(--oc-surface-hover);
+}
+
+.oc-navitem.active {
+  background: var(--oc-accent-soft);
+  color: var(--oc-accent);
+  font-weight: 600;
+}
+
+.oc-navitem.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 15px;
+  border-radius: 0 2px 2px 0;
+  background: var(--oc-accent);
+  animation: oc-indicator 0.22s ease both;
+}
+
+@keyframes oc-indicator {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scaleY(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1);
+  }
+}
+
+.oc-navitem-icon {
+  font-size: 15px;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.oc-navitem-badge {
+  margin-left: auto;
+  font-size: 10.5px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.16);
+  font-family: var(--oc-mono);
+}
+
+.oc-sidenav-footer {
+  margin-top: auto;
+  padding: 8px 10px 0;
+  font-size: 10.5px;
+  opacity: 0.4;
+  font-family: var(--oc-mono);
+}
+
+/* ── 页面头部 ───────────────────────────────────────── */
+
+.oc-page-header {
+  margin-bottom: 16px;
+}
+
+.oc-page-title {
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.1px;
+  margin-bottom: 3px;
+}
+
+.oc-page-desc {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* ── 通用面板 ───────────────────────────────────────── */
+
+.oc-panel {
+  border: 1px solid var(--oc-border);
+  border-radius: var(--oc-radius);
+  background: var(--oc-surface);
+  padding: 14px 16px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.oc-panel:hover {
+  border-color: var(--oc-border-strong);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.oc-panel-title {
+  font-size: 11px;
+  font-weight: 650;
+  margin-bottom: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+}
+
+.oc-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.oc-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.oc-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1080px) {
+  .oc-grid-3,
+  .oc-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 键值表 ─────────────────────────────────────────── */
+
+.oc-kv {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 0 12px;
+  font-size: 12px;
+}
+
+.oc-kv dt {
+  opacity: 0.55;
+  padding: 3px 0;
+}
+
+.oc-kv dd {
+  padding: 3px 0;
+  word-break: break-all;
+  font-weight: 500;
+}
+
+.oc-mono {
+  font-family: var(--oc-mono);
+  font-size: 12px;
+}
+
+/* ── 用量条 ─────────────────────────────────────────── */
+
+.oc-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.oc-usage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.oc-usage-label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.oc-usage-value {
+  font-family: var(--oc-mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.oc-usage-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(128, 128, 128, 0.16);
+  overflow: hidden;
+}
+
+.oc-usage-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--oc-accent);
+  transition: width 0.4s linear;
+}
+
+.oc-usage-fill.warn {
+  background: var(--oc-warning);
+}
+
+.oc-usage-fill.crit {
+  background: var(--oc-danger);
+}
+
+.oc-usage-sub {
+  font-size: 11px;
+  opacity: 0.5;
+  font-family: var(--oc-mono);
+}
+
+/* ── 实时速率 ───────────────────────────────────────── */
+
+.oc-spark {
+  width: 100%;
+  height: 60px;
+  display: block;
+}
+
+.oc-rate {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+.oc-rate-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.oc-rate-label {
+  font-size: 11px;
+  opacity: 0.55;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.oc-rate-value {
+  font-family: var(--oc-mono);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.oc-rate-unit {
+  font-size: 11px;
+  opacity: 0.5;
+  font-weight: 400;
+  margin-left: 3px;
+}
+
+.oc-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ── 工具卡片 ───────────────────────────────────────── */
+
+.oc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.oc-toolgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+  gap: 10px;
+}
+
+.oc-toolcard {
+  border-radius: var(--oc-radius);
+  padding: 12px 13px;
+  cursor: pointer;
+  border: 1px solid var(--oc-border);
+  background: var(--oc-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  /* 浮起 + 阴影 + 边框的连贯过渡，营造 Fluent 的「活」手感 */
+  transition: border-color 0.18s ease, background 0.18s ease,
+    transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s ease;
+  will-change: transform;
+}
+
+.oc-toolcard:hover {
+  border-color: var(--oc-accent);
+  background: var(--oc-accent-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+.oc-toolcard:active {
+  transform: translateY(0);
+  transition-duration: 0.08s;
+}
+
+.oc-toolcard.disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.oc-toolcard.disabled:hover {
+  border-color: var(--oc-border);
+  background: var(--oc-surface);
+}
+
+.oc-toolcard-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.oc-toolcard-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--oc-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: rgba(128, 128, 128, 0.1);
+  flex-shrink: 0;
+}
+
+.oc-toolcard-head {
+  min-width: 0;
+  flex: 1;
+}
+
+.oc-toolcard-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oc-toolcard-meta {
+  font-size: 10.5px;
+  opacity: 0.5;
+  font-family: var(--oc-mono);
+}
+
+.oc-toolcard-desc {
+  font-size: 11.5px;
+  opacity: 0.62;
+  line-height: 1.5;
+  min-height: 34px;
+}
+
+.oc-toolcard-foot {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* ── 标签 ───────────────────────────────────────────── */
+
+.oc-chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.14);
+  opacity: 0.85;
+}
+
+.oc-chip.admin {
+  background: rgba(197, 15, 31, 0.14);
+  color: var(--oc-danger);
+}
+
+.oc-chip.plugin {
+  background: var(--oc-accent-soft);
+  color: var(--oc-accent);
+}
+
+.oc-chip.external {
+  background: rgba(14, 112, 14, 0.14);
+  color: var(--oc-positive);
+}
+
+/* ── 空状态 ─────────────────────────────────────────── */
+
+.oc-empty {
+  text-align: center;
+  padding: 56px 20px;
+  opacity: 0.45;
+  font-size: 12px;
+}
+
+/* ── 滚动条 ─────────────────────────────────────────── */
+
+.oc-page::-webkit-scrollbar {
+  width: 10px;
+}
+
+.oc-page::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 5px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.oc-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.48);
+  background-clip: content-box;
+}
+
+.oc-page::-webkit-scrollbar-track {
+  background: transparent;
+}
