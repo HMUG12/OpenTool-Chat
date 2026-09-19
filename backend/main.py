@@ -101,7 +101,6 @@ class AppHost:
             frameless=True,
             easy_drag=False,  # 仅标题栏 RPC 拖动，避免全窗口拖动导致按钮点不动
             background_color="#1B1A19",
-            icon=str(ICON) if ICON.exists() else None,
             text_select=False,
         )
         self.api.attach_window(self.window)
@@ -146,6 +145,7 @@ class AppHost:
                 http_server=False,
                 private_mode=True,
                 gui=webview_guess_gui(),
+                icon=str(ICON) if ICON.exists() else None,
             )
         finally:
             self.tray.stop()
