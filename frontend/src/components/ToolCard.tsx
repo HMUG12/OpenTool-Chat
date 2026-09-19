@@ -1,4 +1,5 @@
 import type { ToolSpec } from '../types'
+import { api } from '../api'
 
 interface Props {
   tool: ToolSpec
@@ -14,17 +15,22 @@ const KIND_LABEL: Record<ToolSpec['kind'], { text: string; cls: string }> = {
 export default function ToolCard({ tool, onLaunch }: Props) {
   const kind = KIND_LABEL[tool.kind]
   const disabled = !tool.available
+  const canDownload = disabled && !!tool.download
 
   const handleClick = () => {
+    if (canDownload) {
+      void api.open_url(tool.download as string)
+      return
+    }
     if (disabled) return
     onLaunch(tool)
   }
 
   return (
     <div
-      className={`oc-toolcard${disabled ? ' disabled' : ''}`}
+      className={`oc-toolcard${disabled && !canDownload ? ' disabled' : ''}`}
       onClick={handleClick}
-      title={disabled ? tool.reason : `启动 ${tool.name}`}
+      title={canDownload ? `点击前往下载 ${tool.name}` : (disabled ? tool.reason : `启动 ${tool.name}`)}
     >
       <div className="oc-toolcard-top">
         <div className="oc-toolcard-icon">{tool.icon}</div>
@@ -39,7 +45,8 @@ export default function ToolCard({ tool, onLaunch }: Props) {
       <div className="oc-toolcard-foot">
         <span className={`oc-chip ${kind.cls}`}>{kind.text}</span>
         {tool.admin && <span className="oc-chip admin">需管理员</span>}
-        {disabled && <span className="oc-chip admin">不可用</span>}
+        {canDownload && <span className="oc-chip admin">去下载</span>}
+        {disabled && !canDownload && <span className="oc-chip admin">不可用</span>}
         {tool.tags.slice(0, 2).map((t) => (
           <span key={t} className="oc-chip">
             {t}

@@ -4,7 +4,11 @@ import { api } from '../api'
 export default function TitleBar() {
   return (
     <div className="oc-titlebar">
-      <div className="oc-titlebar-drag">
+      <div
+        className="oc-titlebar-drag"
+        onMouseDown={() => void api.window_start_drag()}
+        onDoubleClick={() => void api.window_toggle_maximize()}
+      >
         <span className="oc-titlebar-title">OpenClass</span>
       </div>
 

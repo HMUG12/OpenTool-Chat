@@ -24,6 +24,7 @@ from .system.tray import TrayIcon
 WINDOW_TITLE = "OpenClass"
 WINDOW_SIZE = (1180, 760)
 MIN_SIZE = (900, 600)
+ICON = paths.app_root() / "openclass.ico"
 
 
 def resolve_url(dev: bool) -> str:
@@ -37,6 +38,9 @@ def resolve_url(dev: bool) -> str:
             "未找到前端构建产物 frontend/dist/index.html。\n"
             "请先执行：cd frontend && npm run build"
         )
+    loading = index.parent / "loading.html"
+    if loading.is_file():
+        return loading.as_uri()  # 先显示启动加载动画，再由 loading.html 跳转到 index.html
     return index.as_uri()
 
 
@@ -95,8 +99,9 @@ class AppHost:
             height=WINDOW_SIZE[1],
             min_size=MIN_SIZE,
             frameless=True,
-            easy_drag=True,  # frameless 下由 Win32 层自动接管拖动/双击最大化
+            easy_drag=False,  # 仅标题栏 RPC 拖动，避免全窗口拖动导致按钮点不动
             background_color="#1B1A19",
+            icon=str(ICON) if ICON.exists() else None,
             text_select=False,
         )
         self.api.attach_window(self.window)
@@ -138,7 +143,7 @@ class AppHost:
         try:
             webview.start(
                 debug=debug,
-                http_server=not Path(url).is_file() and not dev,
+                http_server=False,
                 private_mode=True,
                 gui=webview_guess_gui(),
             )

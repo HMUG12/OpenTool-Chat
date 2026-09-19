@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenClass</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #1b1a19;
+        color: #e8e6e3;
+        font-family: -apple-system, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+      }
+      .boot {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+      }
+      .spinner {
+        width: 46px;
+        height: 46px;
+        border: 4px solid rgba(255, 255, 255, 0.15);
+        border-top-color: #4cc2ff;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      .t {
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        opacity: 0.8;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="boot">
+      <div class="spinner"></div>
+      <div class="t">OpenClass 启动中…</div>
+    </div>
+    <script>
+      // 当前页（启动动画）加载完成后切换到真实应用（同目录 index.html）
+      setTimeout(function () {
+        location.replace("index.html");
+      }, 500);
+    </script>
+  </body>
+</html>

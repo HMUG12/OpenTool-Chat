@@ -218,6 +218,15 @@ class Api:
             except Exception:
                 pass
 
+    def open_url(self, url: str) -> None:
+        """未检测到外部应用时，打开官方下载页。"""
+        import webbrowser
+
+        try:
+            webbrowser.open(str(url))
+        except Exception:
+            pass
+
     def window_quit(self) -> None:
         """真正退出（托盘菜单「退出」调用）。"""
         if self._window:

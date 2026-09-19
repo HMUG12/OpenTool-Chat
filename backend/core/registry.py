@@ -51,6 +51,7 @@ class ToolSpec:
     reason: str | None = None
     tags: list[str] = field(default_factory=list)
     app: str | None = None  # 关联的应用名（7zip/vlc/...），由 app_locator 动态定位
+    download: str | None = None  # 未检测到时的官方下载地址
 
     # 内部字段：清单所在目录，不暴露给前端
     base_dir: Path = field(default=Path("."), repr=False)
@@ -82,6 +83,7 @@ class ToolSpec:
             "reason": self.reason,
             "tags": self.tags,
             "app": self.app,
+            "download": self.download,
         }
 
 
@@ -136,6 +138,7 @@ class ToolRegistry:
 
         name = raw.get("name") or folder.name
         app = raw.get("app")
+        download = raw.get("download")
         spec = ToolSpec(
             id=raw.get("id") or folder.name,
             name=name,

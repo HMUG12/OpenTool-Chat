@@ -52,6 +52,8 @@ def main() -> int:
         # 托盘 / 图标
         "--collect-submodules",
         "PIL",
+        "--icon",
+        str(ROOT / "openclass.ico"),
         # 注册表与窗口集成
         "--hidden-import",
         "win32api",
@@ -75,6 +77,13 @@ def main() -> int:
         shutil.rmtree(dest_tools)
     shutil.copytree(ROOT / "tools", dest_tools)
     print(f"[pack] 已复制工具目录 -> {dest_tools}")
+
+    # 应用图标：供运行期 create_window(icon=) 使用（与 exe 图标一致）
+    icon_src = ROOT / "openclass.ico"
+    icon_dst = DIST / "OpenClass" / "openclass.ico"
+    if icon_src.is_file():
+        shutil.copy(icon_src, icon_dst)
+        print(f"[pack] 已复制图标 -> {icon_dst}")
 
     exe = DIST / "OpenClass" / "OpenClass.exe"
     print(f"[pack] 完成：{exe}")

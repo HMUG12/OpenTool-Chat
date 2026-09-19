@@ -15,6 +15,7 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64
+SetupIconFile=openclass.ico
 PrivilegesRequired=lowest
 UninstallDisplayName=OpenClass
 CreateUninstallRegKey=yes

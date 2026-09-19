@@ -19,6 +19,8 @@ export interface ToolSpec {
   available: boolean
   /** 不可用原因 */
   reason?: string
+  /** 未检测到时的官方下载地址（点击前往下载） */
+  download?: string
   tags: string[]
 }
 
