@@ -41,8 +41,20 @@ def resolve_command(entry: Path, args: list[str]) -> tuple[list[str], Path]:
             str(entry),
             *args,
         ], workdir
+    extra: list[str] = []
+    # OpenOffice / LibreOffice：bootstraprc 里的 UserInstallation 在便携或
+    # 非安装场景下不生效，必须由命令行 -env 指定一个可写的用户配置目录，
+    # 否则启动即报 "A general error occurred while accessing your central
+    # configuration"。这里统一指向 program 同级目录下的 user。
+    if entry.name.lower() == "soffice.exe":
+        user_dir = entry.parent.parent / "user"
+        posix = user_dir.as_posix()
+        if len(posix) > 1 and posix[1] == ":":
+            posix = posix[0].lower() + posix[1:]
+        extra.append(f"-env:UserInstallation=file:///{posix}")
+
     # .exe / .com / 无扩展名：直接执行
-    return [str(entry), *args], workdir
+    return [str(entry), *extra, *args], workdir
 
 
 def launch_detached(entry: Path, args: list[str], admin: bool = False) -> tuple[bool, str]:

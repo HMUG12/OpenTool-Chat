@@ -50,6 +50,13 @@ _APPS: dict[str, dict] = {
     "openoffice": {
         "app_paths": "soffice.exe",
         "reg_keys": [],
+        # OpenOffice 4.1.x 无法在非 ASCII（中文）路径下运行，会报
+        # "central configuration" 错误。因此除 tools/ 便携版外，额外支持
+        # 放到纯 ASCII 目录的完整副本，并优先于中文路径下的便携版。
+        "abs_paths": [
+            "D:\\OpenClassOO\\program\\soffice.exe",
+            "C:\\OpenClassOO\\program\\soffice.exe",
+        ],
         "program_dirs": [
             "OpenOffice 4\\program\\soffice.exe",
             "OpenOffice\\program\\soffice.exe",
@@ -137,6 +144,19 @@ def _from_program_dirs(rel_names: list[str]) -> Optional[Path]:
     return None
 
 
+def _from_abs_paths(paths: list[str]) -> Optional[Path]:
+    """按绝对路径直接查找。
+
+    用于无法放在中文路径下运行的软件（如 OpenOffice 4.1.x），
+    允许把它们放到纯 ASCII 目录后再被发现。
+    """
+    for raw in paths:
+        path = Path(raw)
+        if path.is_file():
+            return path
+    return None
+
+
 def _from_portable(subdir: str, names: tuple[str, ...]) -> Optional[Path]:
     root = app_root()  # 全局路径真相：开发态为项目根，打包态为 exe 目录
     folder = root / "tools" / subdir
@@ -156,6 +176,7 @@ def find_app(name: str) -> Optional[Path]:
     if not spec:
         return None
     for finder in (
+        lambda: _from_abs_paths(spec.get("abs_paths", [])),
         lambda: _from_app_paths(spec.get("app_paths", "")),
         lambda: _from_reg_keys(spec.get("reg_keys", [])),
         lambda: _from_program_dirs(spec.get("program_dirs", [])),

@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -23,6 +24,15 @@ SEP = os.pathsep  # Windows 上为 ';'
 
 def main() -> int:
     DIST.mkdir(parents=True, exist_ok=True)
+
+    # PyInstaller 输出前会删除已存在的目标目录，而该目录通常有数千个文件，
+    # 会被安全删除保护拦截（批量删除需确认）导致打包直接失败。
+    # 这里先把旧产物重命名挪开，让目标路径保持"不存在"，绕开批量删除。
+    out_dir = DIST / "OpenClass"
+    if out_dir.exists():
+        stamp = time.strftime("%Y%m%d_%H%M%S")
+        out_dir.rename(DIST / f"OpenClass_old_{stamp}")
+
     cmd = [
         sys.executable,
         "-m",

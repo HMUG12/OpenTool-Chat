@@ -91,6 +91,9 @@ class AppHost:
             print(f"[OpenClass] {exc}", file=sys.stderr)
             sys.exit(2)
 
+        # frameless：仅标题栏(.oc-titlebar-drag)可拖，其余区域(按钮)正常可点
+        webview.settings['DRAG_REGION_SELECTOR'] = '.oc-titlebar-drag'
+
         self.window = webview.create_window(
             title=WINDOW_TITLE,
             url=url,

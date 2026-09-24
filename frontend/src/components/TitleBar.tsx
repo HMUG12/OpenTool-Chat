@@ -6,7 +6,6 @@ export default function TitleBar() {
     <div className="oc-titlebar">
       <div
         className="oc-titlebar-drag"
-        onMouseDown={() => void api.window_start_drag()}
         onDoubleClick={() => void api.window_toggle_maximize()}
       >
         <span className="oc-titlebar-title">OpenClass</span>
