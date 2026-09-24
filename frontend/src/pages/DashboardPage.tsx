@@ -263,8 +263,8 @@ export default function DashboardPage() {
           <div className="oc-grid oc-grid-2">
             {hardware.disks.map((disk) => (
               <UsageBar
-                key={disk.device}
-                label={`${disk.device}  ${disk.mountpoint}`}
+                key={disk.mountpoint}
+                label={disk.mountpoint}
                 percent={disk.percent}
                 value={`${disk.percent.toFixed(1)}%`}
                 sub={`${formatBytes(disk.used)} / ${formatBytes(disk.total)} · ${disk.fstype}`}

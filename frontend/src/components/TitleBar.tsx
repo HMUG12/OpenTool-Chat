@@ -8,7 +8,7 @@ export default function TitleBar() {
         className="oc-titlebar-drag"
         onDoubleClick={() => void api.window_toggle_maximize()}
       >
-        <span className="oc-titlebar-title">OpenClass</span>
+        <span className="oc-titlebar-title">OpenClass-Box</span>
       </div>
 
       <div className="oc-titlebar-actions">

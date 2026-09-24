@@ -25,7 +25,7 @@ export default function AboutPage({ toolCount }: { toolCount: number }) {
   return (
     <div className="oc-page">
       <div className="oc-page-header">
-        <div className="oc-page-title">关于 OpenClass</div>
+        <div className="oc-page-title">关于 OpenClass-Box</div>
         <div className="oc-page-desc">{info?.description ?? '开源实用工具箱'}</div>
       </div>
 

@@ -142,7 +142,7 @@ const MOCK_NETWORK: NetworkInfo = {
 const MOCK_API: OcApi = {
   async get_info() {
     return {
-      name: 'OpenClass', version: '0.1.0', author: 'OpenClass Contributors',
+      name: 'OpenClass-Box', version: '0.1.2', author: 'OpenClass-Box Contributors',
       description: '开源实用工具箱', portable: true,
       rootDir: 'E:/OpenClass', toolDir: 'E:/OpenClass/tools',
       pythonVersion: '3.13.7', platform: 'Windows',

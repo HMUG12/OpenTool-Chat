@@ -153,7 +153,7 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
             <div style={{ borderTop: '1px solid var(--oc-border)', margin: '4px 0' }} />
             <SwitchRow
               label="右键「打开方式」集成"
-              desc="把 OpenClass 收编进文件的右键打开方式菜单（需打包为 exe 后生效）"
+              desc="把 OpenClass-Box 收编进文件的右键打开方式菜单（需打包为 exe 后生效）"
               checked={openwith}
               disabled={busy}
               onChange={toggleOpenwith}

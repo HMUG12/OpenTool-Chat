@@ -45,7 +45,7 @@ class Api:
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "name": "OpenClass",
+            "name": "OpenClass-Box",
             "version": __version__,
             "author": AUTHOR,
             "description": DESCRIPTION,
@@ -68,6 +68,12 @@ class Api:
     def refresh_tools(self) -> int:
         registry.scan()
         return registry.count()
+
+    def check_updates(self, force: bool = False) -> list[dict[str, Any]]:
+        """检查各集成组件是否有新版本（联网查询，断网返回空列表）。"""
+        from .core.updater import check_updates
+
+        return check_updates(force=force)
 
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)

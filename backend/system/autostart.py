@@ -15,7 +15,7 @@ except ImportError:
     winreg = None
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-APP_NAME = "OpenClass"
+APP_NAME = "OpenClass-Box"
 
 
 def _command() -> str:

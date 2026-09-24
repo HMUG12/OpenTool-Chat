@@ -21,7 +21,7 @@ from .api import Api
 from .core import paths
 from .system.tray import TrayIcon
 
-WINDOW_TITLE = "OpenClass"
+WINDOW_TITLE = "OpenClass-Box"
 WINDOW_SIZE = (1180, 760)
 MIN_SIZE = (900, 600)
 ICON = paths.app_root() / "openclass.ico"

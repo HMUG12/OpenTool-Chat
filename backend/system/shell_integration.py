@@ -17,7 +17,7 @@ except ImportError:
 
 from ..core.app_locator import FILE_ROUTES
 
-APP_EXE_NAME = "OpenClass.exe"
+APP_EXE_NAME = "OpenClass-Box.exe"
 _APPS_KEY = rf"Software\Classes\Applications\{APP_EXE_NAME}"
 
 

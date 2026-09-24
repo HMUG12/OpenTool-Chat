@@ -1,5 +1,5 @@
 """
-打包为 onedir 绿色版：生成 dist_build/OpenClass/OpenClass.exe。
+打包为 onedir 绿色版：生成 dist_build/OpenClass-Box/OpenClass-Box.exe。
 
 设计立场（图吧式工具箱）：
   - onedir 而非 onefile：避免每次启动全量解压到临时目录导致的十几秒冷启动；
@@ -28,17 +28,17 @@ def main() -> int:
     # PyInstaller 输出前会删除已存在的目标目录，而该目录通常有数千个文件，
     # 会被安全删除保护拦截（批量删除需确认）导致打包直接失败。
     # 这里先把旧产物重命名挪开，让目标路径保持"不存在"，绕开批量删除。
-    out_dir = DIST / "OpenClass"
+    out_dir = DIST / "OpenClass-Box"
     if out_dir.exists():
         stamp = time.strftime("%Y%m%d_%H%M%S")
-        out_dir.rename(DIST / f"OpenClass_old_{stamp}")
+        out_dir.rename(DIST / f"OpenClass-Box_old_{stamp}")
 
     cmd = [
         sys.executable,
         "-m",
         "PyInstaller",
         "--name",
-        "OpenClass",
+        "OpenClass-Box",
         "--onedir",
         "--noconsole",
         "--clean",
@@ -82,7 +82,7 @@ def main() -> int:
 
     # 工具目录不交给 PyInstaller（会被塞进 _internal），直接复制到 exe 同级，
     # 保证 tools_dir() 找到，且与 exe 一起拷贝即可运行。
-    dest_tools = DIST / "OpenClass" / "tools"
+    dest_tools = DIST / "OpenClass-Box" / "tools"
     if dest_tools.exists():
         shutil.rmtree(dest_tools)
     shutil.copytree(ROOT / "tools", dest_tools)
@@ -90,12 +90,12 @@ def main() -> int:
 
     # 应用图标：供运行期 create_window(icon=) 使用（与 exe 图标一致）
     icon_src = ROOT / "openclass.ico"
-    icon_dst = DIST / "OpenClass" / "openclass.ico"
+    icon_dst = DIST / "OpenClass-Box" / "openclass.ico"
     if icon_src.is_file():
         shutil.copy(icon_src, icon_dst)
         print(f"[pack] 已复制图标 -> {icon_dst}")
 
-    exe = DIST / "OpenClass" / "OpenClass.exe"
+    exe = DIST / "OpenClass-Box" / "OpenClass-Box.exe"
     print(f"[pack] 完成：{exe}")
     return 0
 

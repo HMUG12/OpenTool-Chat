@@ -71,11 +71,36 @@ export default function App() {
   const isDark = themeMode === 'system' ? systemDark : themeMode === 'dark'
 
   const refresh = useCallback(async () => {
+    await api.refresh_tools()
     const list = await api.list_tools()
     setTools(list)
     setToast({ ok: true, message: `扫描完成，共 ${list.length} 个工具` })
     window.setTimeout(() => setToast(null), 2200)
   }, [])
+
+  // 静默刷新：不弹提示；仅在列表确有变化时才更新 state，避免无谓重渲染
+  const silentRefresh = useCallback(async () => {
+    try {
+      await api.refresh_tools()
+      const list = await api.list_tools()
+      setTools((prev) => (JSON.stringify(prev) === JSON.stringify(list) ? prev : list))
+    } catch {
+      /* 后台扫描失败时静默忽略，不影响使用 */
+    }
+  }, [])
+
+  // 进入「工具箱 / 插件」页时自动刷新一次
+  useEffect(() => {
+    if (page === 'tools' || page === 'plugins') {
+      void silentRefresh()
+    }
+  }, [page, silentRefresh])
+
+  // 运行期间定期自动扫描，增删工具无需手动点「重新扫描」
+  useEffect(() => {
+    const timer = window.setInterval(() => void silentRefresh(), 30000)
+    return () => window.clearInterval(timer)
+  }, [silentRefresh])
 
   const launch = useCallback(async (tool: ToolSpec) => {
     const result = await api.launch_tool(tool.id)

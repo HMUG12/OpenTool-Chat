@@ -44,7 +44,7 @@ class TrayIcon:
             pystray.MenuItem("显示 OpenClass", lambda _: self._on_show(), default=True),
             pystray.MenuItem("退出", lambda _: self._on_quit()),
         )
-        self._icon = pystray.Icon("OpenClass", _make_icon(), "OpenClass", menu)
+        self._icon = pystray.Icon("OpenClass-Box", _make_icon(), "OpenClass-Box", menu)
         threading.Thread(target=self._icon.run, daemon=True).start()
 
     def stop(self) -> None:

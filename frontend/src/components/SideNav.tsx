@@ -23,7 +23,7 @@ export default function SideNav({ items, activeId, onSelect, version }: Props) {
         <div className="oc-sidenav-brand-icon">
           <ToolboxRegular fontSize={15} />
         </div>
-        <div className="oc-sidenav-brand-name">OpenClass</div>
+        <div className="oc-sidenav-brand-name">OpenClass-Box</div>
       </div>
 
       {items.map((item) => (
