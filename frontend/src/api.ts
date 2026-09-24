@@ -25,6 +25,16 @@ export interface OcApi {
   open_tool_dir(): Promise<boolean>
   reveal_tool(id: string): Promise<boolean>
   refresh_tools(): Promise<number>
+  check_url(url: string): Promise<any>
+  url_alerts(): Promise<any[]>
+  check_updates(force?: boolean): Promise<any[]>
+  search_music(keyword?: string): Promise<any[]>
+  music_url(path: string): Promise<string>
+  search_music_online(keyword: string, platform?: string): Promise<any[]>
+  fetch_music(song_id: string, platform?: string): Promise<string>
+  list_wallpapers(directory?: string): Promise<any[]>
+  set_wallpaper(path: string): Promise<boolean>
+  random_wallpaper(directory?: string): Promise<any>
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
@@ -158,6 +168,16 @@ const MOCK_API: OcApi = {
   async open_tool_dir() { return true },
   async reveal_tool() { return true },
   async refresh_tools() { return MOCK_TOOLS.length },
+  async check_url(url) { return { url, host: '', score: 0, level: 'safe', reasons: ['开发模式：未执行真实检测'] } },
+  async url_alerts() { return [] },
+  async check_updates() { return [] },
+  async search_music() { return [] },
+  async music_url(path) { return path },
+  async search_music_online() { return [] },
+  async fetch_music() { return '' },
+  async list_wallpapers() { return [] },
+  async set_wallpaper() { return false },
+  async random_wallpaper() { return { ok: false, message: '' } },
   async get_hardware() { return MOCK_HARDWARE },
   async get_metrics() {
     const history = mockHistory()

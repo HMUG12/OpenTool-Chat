@@ -126,6 +126,20 @@ class AppHost:
                     pass
 
         threading.Thread(target=self.api.refresh_tools, daemon=True).start()
+        # 剪贴板网址监听：复制到风险网址时自动产生告警供前端提示
+        try:
+            from .core.url_watch import start as start_url_watch
+
+            start_url_watch()
+        except Exception:
+            pass
+        # 浏览网站自动检测：读 Chrome/Edge 历史库，发现风险网址即告警
+        try:
+            from .core.browser_watch import start as start_browser_watch
+
+            start_browser_watch()
+        except Exception:
+            pass
         if files:
             threading.Thread(target=route_files, daemon=True).start()
 
@@ -140,7 +154,15 @@ class AppHost:
         self.tray.start()
 
         if hidden or files:
-            self.window.hide()
+            # 注意：webview.start() 之前窗口尚未就绪，此时直接 hide() 会抛
+            # "Main window failed to start"。改为窗口显示完成后再隐藏。
+            def _hide_after_shown() -> None:
+                try:
+                    self.window.hide()
+                except Exception:
+                    pass
+
+            self.window.events.shown += _hide_after_shown
 
         try:
             webview.start(

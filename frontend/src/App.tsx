@@ -10,8 +10,10 @@ import {
 import {
   GaugeRegular,
   InfoRegular,
+  MusicNote1Regular,
   PuzzlePieceRegular,
   SettingsRegular,
+  ShieldRegular,
   ToolboxRegular,
 } from '@fluentui/react-icons'
 import { api } from './api'
@@ -23,8 +25,12 @@ import ToolsPage from './pages/ToolsPage'
 import PluginsPage from './pages/PluginsPage'
 import SettingsPage from './pages/SettingsPage'
 import AboutPage from './pages/AboutPage'
+import SecurityPage from './pages/SecurityPage'
+import MusicPage from './pages/MusicPage'
+import UpdatePage from './pages/UpdatePage'
+import WallpaperPage from './pages/WallpaperPage'
 
-type PageId = 'dashboard' | 'tools' | 'plugins' | 'settings' | 'about'
+type PageId = 'dashboard' | 'music' | 'wallpaper' | 'tools' | 'plugins' | 'security' | 'update' | 'settings' | 'about'
 
 interface Toast {
   ok: boolean
@@ -102,6 +108,26 @@ export default function App() {
     return () => window.clearInterval(timer)
   }, [silentRefresh])
 
+  // 网址风险告警：复制到的网址被判定可疑/高危时顶部提示（不拦截任何操作）
+  useEffect(() => {
+    const timer = window.setInterval(async () => {
+      try {
+        const list = await api.url_alerts()
+        if (list?.length) {
+          const top = list[0]
+          setToast({
+            ok: false,
+            message: `⚠️ 检测到可疑网址（${top.score} 分）：${top.url} — ${top.reasons?.[0] ?? ''}`,
+          })
+          window.setTimeout(() => setToast(null), 8000)
+        }
+      } catch {
+        /* 拉取告警失败时忽略 */
+      }
+    }, 5000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   const launch = useCallback(async (tool: ToolSpec) => {
     const result = await api.launch_tool(tool.id)
     setToast(result)
@@ -110,8 +136,12 @@ export default function App() {
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: '系统状态', icon: <GaugeRegular fontSize={16} /> },
+    { id: 'music', label: '音乐', icon: <MusicNote1Regular fontSize={16} /> },
+    { id: 'wallpaper', label: '壁纸', icon: <SettingsRegular fontSize={16} /> },
     { id: 'tools', label: '工具箱', icon: <ToolboxRegular fontSize={16} />, badge: tools.length },
     { id: 'plugins', label: '插件', icon: <PuzzlePieceRegular fontSize={16} /> },
+    { id: 'security', label: '安全', icon: <ShieldRegular fontSize={16} /> },
+    { id: 'update', label: '更新', icon: <SettingsRegular fontSize={16} /> },
     { id: 'settings', label: '设置', icon: <SettingsRegular fontSize={16} /> },
     { id: 'about', label: '关于', icon: <InfoRegular fontSize={16} /> },
   ]
@@ -131,6 +161,14 @@ export default function App() {
         )
       case 'plugins':
         return <PluginsPage tools={tools} onRefresh={refresh} />
+      case 'security':
+        return <SecurityPage />
+      case 'music':
+        return <MusicPage />
+      case 'wallpaper':
+        return <WallpaperPage />
+      case 'update':
+        return <UpdatePage />
       case 'settings':
         return <SettingsPage themeMode={themeMode} setThemeMode={setThemeMode} />
       case 'about':

@@ -75,6 +75,60 @@ class Api:
 
         return check_updates(force=force)
 
+    def check_url(self, url: str) -> dict[str, Any]:
+        """对网址做安全评分，返回 score / level(safe|warn|danger) / reasons。"""
+        from .core.url_guard import check_url
+
+        return check_url(url)
+
+    def url_alerts(self) -> list[dict[str, Any]]:
+        """取出剪贴板监听产生的风险网址告警（取出即清空）。"""
+        from .core.url_watch import alerts
+
+        return alerts()
+
+    def search_music(self, keyword: str = "") -> list[dict[str, Any]]:
+        """搜索本地音乐库（空关键词返回全部，最多 200 条）。"""
+        from .core.music import search
+
+        return search(keyword)
+
+    def music_url(self, path: str) -> str:
+        """把本地音频路径转成前端可直接播放的 URL。"""
+        from .core.music import media_url
+
+        return media_url(path)
+
+    def search_music_online(self, keyword: str, platform: str = "netease") -> list[dict[str, Any]]:
+        """在线搜索音频（当前支持网易云）。"""
+        from .core.music import search_online
+
+        return search_online(keyword, platform)
+
+    def fetch_music(self, song_id: str, platform: str = "netease") -> str:
+        """把在线音频拉取到本地，返回本地路径（失败返回空串）。"""
+        from .core.music import fetch_online
+
+        return fetch_online(song_id, platform)
+
+    def list_wallpapers(self, directory: str = "") -> list[dict[str, Any]]:
+        """列出可用作壁纸的图片。"""
+        from .core.wallpaper import list_images
+
+        return list_images(directory)
+
+    def set_wallpaper(self, path: str) -> bool:
+        """把指定图片设为桌面壁纸。"""
+        from .core.wallpaper import set_wallpaper
+
+        return set_wallpaper(path)
+
+    def random_wallpaper(self, directory: str = "") -> dict[str, Any]:
+        """从目录随机更换壁纸。"""
+        from .core.wallpaper import random_wallpaper
+
+        return random_wallpaper(directory)
+
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
         if spec is None:
