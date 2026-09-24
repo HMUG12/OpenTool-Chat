@@ -52,3 +52,4 @@ tools/
 installer/
 installer_iscc.log
 installer_iscc.err
+third_party/
