@@ -36,6 +36,8 @@ export interface OcApi {
   set_wallpaper(path: string): Promise<boolean>
   random_wallpaper(directory?: string): Promise<any>
   run_health_checks(): Promise<any>
+  list_repairs(): Promise<any[]>
+  run_repair(key: string): Promise<any>
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
@@ -59,116 +61,49 @@ export interface OcApi {
 // 开发模式 mock：没有 pywebview 时也能在浏览器里预览 UI
 // ════════════════════════════════════════════════════════════
 
-const MOCK_TOOLS: ToolSpec[] = [
-  {
-    id: 'random_picker', name: '随机点名', category: 'classroom',
-    description: '老虎机动效滚动抽取，支持排除已点名单',
-    icon: '🎰', version: '1.0.0', author: 'OpenClass', kind: 'builtin',
-    entry: 'tools/random_picker', args: [], admin: false, available: true,
-    tags: ['课堂', '演示'],
-  },
-  {
-    id: 'pdf_merge', name: 'PDF 合并', category: 'document',
-    description: '把多个 PDF 按顺序合并成一个文件',
-    icon: '📄', version: '1.2.0', author: 'OpenClass', kind: 'plugin',
-    entry: 'tools/pdf_merge', args: [], admin: false, available: true,
-    tags: ['文档', '批处理'],
-  },
-  {
-    id: 'batch_rename', name: '批量重命名', category: 'file',
-    description: '按规则批量重命名文件，支持正则与序号',
-    icon: '🔤', version: '0.9.1', author: 'OpenClass', kind: 'plugin',
-    entry: 'tools/batch_rename', args: [], admin: false, available: true,
-    tags: ['文件', '批处理'],
-  },
-  {
-    id: 'image_compress', name: '图片压缩', category: 'media',
-    description: '批量压缩图片体积，支持质量与尺寸设定',
-    icon: '🖼️', version: '1.0.3', author: 'OpenClass', kind: 'plugin',
-    entry: 'tools/image_compress', args: [], admin: false, available: true,
-    tags: ['图片'],
-  },
-  {
-    id: 'file_hash', name: '文件校验', category: 'file',
-    description: '计算 MD5 / SHA1 / SHA256 并比对',
-    icon: '#️⃣', version: '1.0.0', author: 'OpenClass', kind: 'plugin',
-    entry: 'tools/file_hash', args: [], admin: false, available: true,
-    tags: ['文件', '校验'],
-  },
-  {
-    id: 'diskgenius', name: 'DiskGenius', category: 'external',
-    description: '第三方磁盘分区工具（需自行放入 tools 目录）',
-    icon: '💽', version: '-', author: '第三方', kind: 'external',
-    entry: 'tools/diskgenius/DG.exe', args: [], admin: true, available: false,
-    reason: '未检测到可执行文件', tags: ['磁盘'],
-  },
-]
+// 开发预览模式下没有任何工具数据（工具列表来自本地后端扫描）
 
-// ── 监测数据的 mock：开发模式下让曲线真实波动，便于观察 UI ──
-
-function mockHistory(count = 60) {
-  const now = Date.now()
-  return Array.from({ length: count }, (_, i) => ({
-    t: now - (count - i) * 1000,
-    cpu: 8 + Math.sin(i / 5) * 6 + Math.random() * 14,
-    memory: 46 + Math.sin(i / 12) * 2 + Math.random() * 2,
-    download: Math.max(0, Math.sin(i / 4) * 320000 + Math.random() * 90000),
-    upload: Math.max(0, Math.abs(Math.cos(i / 6)) * 60000 + Math.random() * 20000),
-  }))
+// 开发预览模式下的空数据结构（刻意不编造任何硬件/网络信息）
+const EMPTY_HARDWARE: HardwareInfo = {
+  cpu: { name: '', cores: 0, threads: 0, freqMax: 0, freqCurrent: 0, arch: '' },
+  memory: { total: 0, percent: 0, totalGB: 0 },
+  swap: { total: 0, used: 0, percent: 0 },
+  disks: [],
+  gpus: [],
+  boards: [],
+  os: { system: '', release: '', version: '', build: '', hostname: '' },
+  bootTime: 0,
 }
 
-const MOCK_HARDWARE: HardwareInfo = {
-  cpu: {
-    name: 'Intel(R) Core(TM) i7-12700H @ 2.30GHz',
-    cores: 14,
-    threads: 20,
-    freqMax: 4600,
-    freqCurrent: 2688,
-    arch: 'AMD64',
-  },
-  memory: { total: 34359738368, percent: 47.4, totalGB: 32 },
-  swap: { total: 8589934592, used: 2147483648, percent: 25 },
-  disks: [
-    { device: 'C:', mountpoint: 'C:\\', fstype: 'NTFS', total: 512110190592, used: 320444825600, free: 191665364992, percent: 62.6 },
-    { device: 'D:', mountpoint: 'D:\\', fstype: 'NTFS', total: 1000202039296, used: 512110190592, free: 488091848704, percent: 51.2 },
-  ],
-  gpus: [
-    { name: 'NVIDIA GeForce RTX 3060 Laptop GPU', memoryGB: 6, driverVersion: '31.0.15.3623' },
-    { name: 'Intel(R) Iris(R) Xe Graphics', memoryGB: 1, driverVersion: '31.0.101.4032' },
-  ],
-  boards: [{ manufacturer: 'Dell Inc.', product: '0J8H2K' }],
-  os: { system: 'Windows', release: '11', version: '10.0.26100', build: '26100', hostname: 'DESKTOP-MOCK' },
-  bootTime: Date.now() / 1000 - 3 * 3600 - 42 * 60,
-}
-
-const MOCK_NETWORK: NetworkInfo = {
-  interfaces: [
-    { name: 'Ethernet', ipv4: [{ address: '192.168.1.12', netmask: '255.255.255.0' }], ipv6: [], mac: 'A4-BB-6D-1C-2E-90', up: true, speedMbps: 1000, mtu: 1500, bytesSent: 1024000, bytesRecv: 20480000 },
-    { name: 'WLAN', ipv4: [{ address: '192.168.1.31', netmask: '255.255.255.0' }], ipv6: [], mac: '7C-B2-7D-9A-11-03', up: true, speedMbps: 866, mtu: 1500, bytesSent: 512000, bytesRecv: 8192000 },
-    { name: 'Loopback', ipv4: [{ address: '127.0.0.1', netmask: '255.0.0.0' }], ipv6: ['::1'], mac: null, up: true, speedMbps: 1073, mtu: 1500, bytesSent: 0, bytesRecv: 0 },
-  ],
-  topology: { gateways: ['192.168.1.1'], dnsServers: ['223.5.5.5', '114.114.114.114'], dhcpEnabled: true },
+const EMPTY_NETWORK: NetworkInfo = {
+  interfaces: [],
+  topology: { gateways: [], dnsServers: [], dhcpEnabled: false },
 }
 
 const MOCK_API: OcApi = {
   async get_info() {
     return {
-      name: 'OpenClass-Box', version: '0.1.2', author: 'OpenClass-Box Contributors',
-      description: '开源实用工具箱', portable: true,
-      rootDir: 'E:/OpenClass', toolDir: 'E:/OpenClass/tools',
-      pythonVersion: '3.13.7', platform: 'Windows',
+      name: 'OpenClass-Box（开发预览）',
+      version: '-',
+      author: 'OpenClass-Box Contributors',
+      description: '当前为浏览器预览模式，未连接本地后端，因此不展示任何数据',
+      portable: true,
+      rootDir: '-',
+      toolDir: '-',
+      pythonVersion: '-',
+      platform: '-',
     }
   },
-  async list_tools() { return MOCK_TOOLS },
-  async launch_tool(id) {
-    return { ok: true, message: `已启动工具：${id}（开发模式模拟）` }
+  async list_tools() { return [] },
+  async launch_tool() {
+    return { ok: false, message: '开发预览模式：无法启动工具，请在桌面端使用' }
   },
   async get_theme() { return 'dark' },
   async set_theme() { return true },
   async open_url(url) { window.open(url, '_blank'); return true },
-  async open_tool_dir() { return true },
-  async reveal_tool() { return true },
-  async refresh_tools() { return MOCK_TOOLS.length },
+  async open_tool_dir() { return false },
+  async reveal_tool() { return false },
+  async refresh_tools() { return 0 },
   async check_url(url) { return { url, host: '', score: 0, level: 'safe', reasons: ['开发模式：未执行真实检测'] } },
   async url_alerts() { return [] },
   async check_updates() { return [] },
@@ -179,42 +114,31 @@ const MOCK_API: OcApi = {
   async list_wallpapers() { return [] },
   async set_wallpaper() { return false },
   async random_wallpaper() { return { ok: false, message: '' } },
-  async run_health_checks() { return { items: [], okCount: 0, total: 0, healthy: true } },
-  async get_hardware() { return MOCK_HARDWARE },
+  async run_health_checks() { return { items: [], okCount: 0, total: 0, healthy: false } },
+  async list_repairs() { return [] },
+  async run_repair() { return { ok: false, message: '开发预览模式：无法执行修复', restart: false } },
+  async get_hardware() { return EMPTY_HARDWARE },
   async get_metrics() {
-    const history = mockHistory()
-    const last = history[history.length - 1]
     return {
       timestamp: Date.now(),
-      cpu: {
-        percent: last.cpu,
-        perCore: Array.from({ length: 20 }, () => 5 + Math.random() * 40),
-        freqCurrent: MOCK_HARDWARE.cpu.freqCurrent,
-        loadAvg: null,
-      },
-      memory: {
-        percent: last.memory,
-        used: MOCK_HARDWARE.memory.total * (last.memory / 100),
-        total: MOCK_HARDWARE.memory.total,
-        available: MOCK_HARDWARE.memory.total * (1 - last.memory / 100),
-      },
-      network: { download: last.download, upload: last.upload, totalRecv: 20480000, totalSent: 1024000 },
-      disk: { read: 24000, write: 8000 },
-      history,
+      cpu: { percent: 0, perCore: [], freqCurrent: 0, loadAvg: null },
+      memory: { percent: 0, used: 0, total: 0, available: 0 },
+      network: { download: 0, upload: 0, totalRecv: 0, totalSent: 0 },
+      disk: { read: 0, write: 0 },
+      history: [],
     }
   },
-  async get_network() { return MOCK_NETWORK },
+  async get_network() { return EMPTY_NETWORK },
   async get_ip() {
     return {
-      hostname: MOCK_HARDWARE.os.hostname,
-      local: '192.168.1.12',
+      hostname: '',
+      local: '',
       loopback: '127.0.0.1',
       public: { ip: null, source: null, reachable: false, queried: false },
     }
   },
   async query_public_ip() {
-    await new Promise((r) => setTimeout(r, 600))
-    return { ip: '203.0.113.42', source: 'api.ipify.org', reachable: true }
+    return { ip: null, source: null, reachable: false }
   },
   async window_minimize() {},
   async window_toggle_maximize() {},

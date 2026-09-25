@@ -624,3 +624,22 @@ body {
 .oc-page::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ════════════════════════════════════════════════════════════
+   通用列表 / 区块（体检、修复、更新、音乐等页面共用，统一排版）
+   ════════════════════════════════════════════════════════════ */
+.oc-list { display: flex; flex-direction: column; }
+.oc-list-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid rgba(128, 128, 128, 0.14);
+}
+.oc-list-row:last-child { border-bottom: none; }
+.oc-list-main { min-width: 0; flex: 1; }
+.oc-list-title { font-size: 14px; font-weight: 600; line-height: 1.5; }
+.oc-list-sub { margin-top: 3px; font-size: 12px; opacity: 0.62; line-height: 1.6; }
+.oc-list-warn { margin-top: 3px; font-size: 12px; color: #e0a020; line-height: 1.6; }
+.oc-hero { text-align: center; padding: 26px 16px 22px; }
+.oc-hero-result { margin-top: 16px; font-size: 20px; font-weight: 600; }
+.oc-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.oc-searchbar { display: flex; gap: 8px; align-items: center; }
+.oc-scroll { max-height: 340px; overflow-y: auto; margin-top: 6px; }

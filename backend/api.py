@@ -135,6 +135,18 @@ class Api:
 
         return run_checks()
 
+    def list_repairs(self) -> list[dict[str, Any]]:
+        """列出可用的修复动作。"""
+        from .core.repair import list_repairs
+
+        return list_repairs()
+
+    def run_repair(self, key: str) -> dict[str, Any]:
+        """执行一个修复动作（需要管理员的会弹 UAC 确认）。"""
+        from .core.repair import run_repair
+
+        return run_repair(key)
+
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
         if spec is None:
