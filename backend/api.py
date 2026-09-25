@@ -129,6 +129,12 @@ class Api:
 
         return random_wallpaper(directory)
 
+    def run_health_checks(self) -> dict[str, Any]:
+        """一键体检：网络 / 声音 / 显示 / 磁盘 / 内存（全部离线）。"""
+        from .core.health import run_checks
+
+        return run_checks()
+
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
         if spec is None:

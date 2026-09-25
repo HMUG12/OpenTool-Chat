@@ -35,6 +35,7 @@ export interface OcApi {
   list_wallpapers(directory?: string): Promise<any[]>
   set_wallpaper(path: string): Promise<boolean>
   random_wallpaper(directory?: string): Promise<any>
+  run_health_checks(): Promise<any>
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
@@ -178,6 +179,7 @@ const MOCK_API: OcApi = {
   async list_wallpapers() { return [] },
   async set_wallpaper() { return false },
   async random_wallpaper() { return { ok: false, message: '' } },
+  async run_health_checks() { return { items: [], okCount: 0, total: 0, healthy: true } },
   async get_hardware() { return MOCK_HARDWARE },
   async get_metrics() {
     const history = mockHistory()
