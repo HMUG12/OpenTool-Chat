@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OpenClass</title>
+    <title>OpenClass-Box</title>
     <style>
       html,
       body {
@@ -20,6 +20,8 @@
         align-items: center;
         justify-content: center;
         gap: 18px;
+        padding: 0 36px;
+        text-align: center;
       }
       .spinner {
         width: 46px;
@@ -33,6 +35,7 @@
         font-size: 14px;
         letter-spacing: 0.08em;
         opacity: 0.8;
+        line-height: 1.9;
       }
       @keyframes spin {
         to {
@@ -43,14 +46,34 @@
   </head>
   <body>
     <div class="boot">
-      <div class="spinner"></div>
-      <div class="t">OpenClass 启动中…</div>
+      <div class="spinner" id="spin"></div>
+      <div class="t" id="tip">OpenClass-Box 启动中…</div>
     </div>
     <script>
-      // 当前页（启动动画）加载完成后切换到真实应用（同目录 index.html）
+      // 本页加载完成即切换到真实应用（同目录 index.html）
       setTimeout(function () {
-        location.replace("index.html");
-      }, 500);
+        try {
+          location.replace("index.html");
+        } catch (e) {
+          /* 失败由下面的兜底提示接管 */
+        }
+      }, 400);
+
+      // 兜底：若数秒后仍停留在本页（跳转失败 / 界面无法渲染），
+      // 给出可执行的提示，而不是让人对着黑屏猜。
+      setTimeout(function () {
+        var tip = document.getElementById("tip");
+        var spin = document.getElementById("spin");
+        if (!tip) return;
+        if (spin) {
+          spin.style.animationPlayState = "paused";
+          spin.style.borderTopColor = "#ffb020";
+        }
+        tip.textContent =
+          "界面未能加载。请确认本机已安装 Microsoft Edge WebView2 运行时，然后按 F5 重试；" +
+          "若问题依旧，请把此界面截图发到交流群 1124622970。";
+        tip.style.opacity = "0.95";
+      }, 7000);
     </script>
   </body>
 </html>

@@ -55,3 +55,5 @@ installer_iscc.err
 third_party/
 
 *.log
+
+runtime/

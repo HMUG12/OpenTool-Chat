@@ -11,7 +11,8 @@ DefaultDirName={autopf}\OpenClass-Box
 DefaultGroupName=OpenClass-Box
 OutputDir=installer
 OutputBaseFilename=OpenClass-Box_Setup
-Compression=lzma2/max
+; 内嵌 WebView2 运行时后包体较大（~700MB），normal 级别平衡体积与编译时间
+Compression=lzma2/normal
 SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64
@@ -47,7 +48,9 @@ Filename: "{app}\OpenClass-Box.exe"; Description: "安装完成后启动 OpenCla
 [Code]
 function NeedsWebView2(): Boolean;
 begin
+  // 已随包携带固定版本运行时（{app}\WebView2Runtime）时无需再装系统运行时的
   Result := not (
+    FileExists(ExpandConstant('{app}\WebView2Runtime\msedgewebview2.exe')) or
     DirExists(ExpandConstant('{localappdata}\Microsoft\EdgeWebView\Application')) or
     DirExists(ExpandConstant('{pf32}\Microsoft\EdgeWebView\Application')) or
     DirExists(ExpandConstant('{pf64}\Microsoft\EdgeWebView\Application'))

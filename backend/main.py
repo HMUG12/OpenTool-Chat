@@ -59,6 +59,11 @@ def ensure_webview2() -> bool:
     if sys.platform != "win32":
         return True
 
+    # 随包携带的固定版本运行时优先：有它就不依赖目标机是否安装 WebView2
+    bundled = paths.app_root() / "WebView2Runtime"
+    if (bundled / "msedgewebview2.exe").is_file():
+        return True
+
     guid = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"  # WebView2 Runtime 官方产品码
     try:
         import winreg
@@ -156,6 +161,12 @@ class AppHost:
         except FileNotFoundError as exc:
             print(f"[OpenClass] {exc}", file=sys.stderr)
             sys.exit(2)
+
+        # 随包携带的固定版本 WebView2：直接指定运行目录，彻底摆脱目标机
+        # 是否安装 WebView2 的问题（pywebview 会用 BrowserExecutableFolder 加载它）
+        bundled_rt = paths.app_root() / "WebView2Runtime"
+        if (bundled_rt / "msedgewebview2.exe").is_file():
+            webview.settings['WEBVIEW2_RUNTIME_PATH'] = str(bundled_rt)
 
         # frameless：仅标题栏(.oc-titlebar-drag)可拖，其余区域(按钮)正常可点
         webview.settings['DRAG_REGION_SELECTOR'] = '.oc-titlebar-drag'

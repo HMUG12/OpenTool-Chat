@@ -95,6 +95,15 @@ def main() -> int:
         shutil.copy(icon_src, icon_dst)
         print(f"[pack] 已复制图标 -> {icon_dst}")
 
+    # 随包携带 WebView2 固定版本运行时：目标机无需安装 WebView2 也能显示界面
+    runtime_src = ROOT / "runtime" / "WebView2Runtime"
+    runtime_dst = DIST / "OpenClass-Box" / "WebView2Runtime"
+    if runtime_src.is_dir():
+        shutil.copytree(runtime_src, runtime_dst)
+        print(f"[pack] 已复制 WebView2 运行时 -> {runtime_dst}")
+    else:
+        print("[pack] 未找到 runtime/WebView2Runtime，跳过（将依赖系统 WebView2）")
+
     exe = DIST / "OpenClass-Box" / "OpenClass-Box.exe"
     print(f"[pack] 完成：{exe}")
     return 0
