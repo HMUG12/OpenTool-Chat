@@ -29,6 +29,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 Source: "dist_build/OpenClass-Box/*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; WebView2 运行时安装器（界面渲染依赖，随包携带，目标机缺失时自动安装）
+Source: "installer\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
 [Icons]
 Name: "{group}\OpenClass-Box"; Filename: "{app}\OpenClass-Box.exe"
@@ -38,22 +40,16 @@ Name: "{autodesktop}\OpenClass-Box"; Filename: "{app}\OpenClass-Box.exe"; Tasks:
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "额外任务:"
 
 [Run]
+; 目标机缺 WebView2 运行时（界面显示不出来的根因）时，自动静默安装
+Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "正在安装界面运行组件 WebView2…"; Check: NeedsWebView2
 Filename: "{app}\OpenClass-Box.exe"; Description: "安装完成后启动 OpenClass-Box"; Flags: nowait postinstall
 
-; 其他设备「界面显示不出来」多因缺少 WebView2 运行时（pywebview 依赖它渲染），
-; 这里做安装前检测并给出明确提示。
 [Code]
-function InitializeSetup(): Boolean;
-var
-  Found: Boolean;
+function NeedsWebView2(): Boolean;
 begin
-  Found :=
-    DirExists(ExpandConstant('{localappdata}\Microsoft\EdgeWebView')) or
+  Result := not (
+    DirExists(ExpandConstant('{localappdata}\Microsoft\EdgeWebView\Application')) or
     DirExists(ExpandConstant('{pf32}\Microsoft\EdgeWebView\Application')) or
-    DirExists(ExpandConstant('{pf64}\Microsoft\EdgeWebView\Application'));
-  if not Found then
-    MsgBox('未检测到 Microsoft Edge WebView2 运行时。' + #13#10 +
-           '程序界面依赖它来渲染；若启动后界面空白/不显示，请先安装 WebView2 运行时。',
-           mbInformation, MB_OK);
-  Result := True;
+    DirExists(ExpandConstant('{pf64}\Microsoft\EdgeWebView\Application'))
+  );
 end;

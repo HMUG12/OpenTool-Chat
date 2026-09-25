@@ -28,7 +28,13 @@ ICON = paths.app_root() / "openclass.ico"
 
 
 def resolve_url(dev: bool) -> str:
-    """决定加载到 WebView 的地址。"""
+    """决定加载到 WebView 的地址。
+
+    这里返回**本地路径**而非 file:// URI，配合 webview.start(http_server=True)
+    由 pywebview 内置的本地 HTTP 服务提供页面。file:// 直加载在部分设备的
+    WebView2 上会因安全策略/路径编码差异而整页加载失败（界面一片黑，
+    且 pywebview 注入的标题栏拖动脚本也一起失效）。
+    """
     if dev:
         return "http://localhost:5173"
 
@@ -40,8 +46,64 @@ def resolve_url(dev: bool) -> str:
         )
     loading = index.parent / "loading.html"
     if loading.is_file():
-        return loading.as_uri()  # 先显示启动加载动画，再由 loading.html 跳转到 index.html
-    return index.as_uri()
+        return str(loading)  # 先显示启动加载动画，再由 loading.html 跳转到 index.html
+    return str(index)
+
+
+def ensure_webview2() -> bool:
+    """检测 WebView2 运行时；缺失时给出明确提示（避免只看到黑屏）。
+
+    界面完全由 WebView2 渲染，缺它时窗口会是一片黑——与其让用户猜，
+    不如直接弹窗告诉他装什么、去哪装。
+    """
+    if sys.platform != "win32":
+        return True
+
+    guid = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"  # WebView2 Runtime 官方产品码
+    try:
+        import winreg
+
+        for root, sub in (
+            (winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{guid}"),
+            (winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\Microsoft\EdgeUpdate\Clients\{guid}"),
+            (winreg.HKEY_CURRENT_USER, rf"SOFTWARE\Microsoft\EdgeUpdate\Clients\{guid}"),
+        ):
+            try:
+                with winreg.OpenKey(root, sub) as key:
+                    winreg.QueryValueEx(key, "pv")
+                    return True
+            except OSError:
+                continue
+    except ImportError:
+        return True
+
+    # 注册表没有时再看安装目录（部分绿色部署只落文件）
+    for probe in (
+        Path(os.environ.get("ProgramFiles(x86)", "")) / "Microsoft" / "EdgeWebView" / "Application",
+        Path(os.environ.get("ProgramFiles", "")) / "Microsoft" / "EdgeWebView" / "Application",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "EdgeWebView" / "Application",
+    ):
+        try:
+            if probe.is_dir() and any(probe.iterdir()):
+                return True
+        except OSError:
+            continue
+
+    try:
+        import ctypes
+
+        ctypes.windll.user32.MessageBoxW(
+            None,
+            "未检测到 Microsoft Edge WebView2 运行时，程序界面无法显示。\n\n"
+            "请先安装 WebView2 运行时（微软官方、免费），安装后重新打开本程序：\n"
+            "https://developer.microsoft.com/microsoft-edge/webview2/\n\n"
+            "（使用安装包安装时会自动装好这一组件）",
+            "OpenClass-Box - 缺少界面运行组件",
+            0x30,  # MB_ICONWARNING
+        )
+    except (AttributeError, OSError):
+        pass
+    return False
 
 
 def webview_guess_gui() -> str | None:
@@ -84,6 +146,10 @@ class AppHost:
         files: list[str] | None = None,
     ) -> None:
         paths.ensure_runtime_dirs()
+
+        # 缺 WebView2 时明确提示（而不是留一个黑屏窗口）
+        if not ensure_webview2():
+            sys.exit(3)
 
         try:
             url = resolve_url(dev)
@@ -167,7 +233,7 @@ class AppHost:
         try:
             webview.start(
                 debug=debug,
-                http_server=False,
+                http_server=True,
                 private_mode=True,
                 gui=webview_guess_gui(),
                 icon=str(ICON) if ICON.exists() else None,
