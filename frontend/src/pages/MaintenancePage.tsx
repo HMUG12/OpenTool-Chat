@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Spinner } from '@fluentui/react-components'
+import { Button, Input, Spinner } from '@fluentui/react-components'
 import { api } from '../api'
 
 function formatSize(bytes: number): string {
@@ -23,6 +23,14 @@ export default function MaintenancePage() {
   const [diag, setDiag] = useState<any>(null)
   const [diagBusy, setDiagBusy] = useState(false)
 
+  const [pkgDir, setPkgDir] = useState('')
+  const [packages, setPackages] = useState<any[]>([])
+  const [pkgMsg, setPkgMsg] = useState('')
+
+  const [points, setPoints] = useState<any[]>([])
+  const [pointMsg, setPointMsg] = useState('')
+  const [pointBusy, setPointBusy] = useState(false)
+
   const loadCleanup = async () => {
     try {
       const result = await api.analyze_cleanup()
@@ -36,8 +44,30 @@ export default function MaintenancePage() {
     }
   }
 
+  const loadPackages = async (dir = '') => {
+    try {
+      const result = await api.list_packages(dir)
+      setPackages(result?.items ?? [])
+      setPkgMsg(result?.message ?? '')
+    } catch {
+      setPackages([])
+    }
+  }
+
+  const loadPoints = async () => {
+    try {
+      const result = await api.list_restore_points()
+      setPoints(result?.points ?? [])
+      setPointMsg(result?.message ?? '')
+    } catch {
+      setPoints([])
+    }
+  }
+
   useEffect(() => {
     void loadCleanup()
+    void loadPackages()
+    void loadPoints()
   }, [])
 
   const toggle = (key: string) => {
@@ -71,6 +101,25 @@ export default function MaintenancePage() {
       setDiag(null)
     } finally {
       setDiagBusy(false)
+    }
+  }
+
+  const install = async (path: string) => {
+    const result = await api.install_package(path)
+    setPkgMsg(result?.message ?? '')
+  }
+
+  const createPoint = async () => {
+    setPointBusy(true)
+    setPointMsg('')
+    try {
+      const result = await api.create_restore_point()
+      setPointMsg(result?.message ?? '')
+      await loadPoints()
+    } catch {
+      setPointMsg('创建失败，请稍后重试')
+    } finally {
+      setPointBusy(false)
     }
   }
 
@@ -164,6 +213,82 @@ export default function MaintenancePage() {
                   {!item.ok && item.suggest && (
                     <div className="oc-list-warn">建议：{item.suggest}</div>
                   )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── 离线软件目录 ── */}
+      <div className="oc-panel" style={{ marginTop: 12 }}>
+        <div className="oc-panel-title">离线软件目录</div>
+        <div className="oc-list-sub" style={{ marginBottom: 10 }}>
+          把常用软件的安装包放进程序目录下的 software 文件夹，这里会自动列出来，点一下就装
+        </div>
+        <div className="oc-searchbar">
+          <Input
+            value={pkgDir}
+            onChange={(_, data) => setPkgDir(data.value)}
+            placeholder="软件目录（留空使用默认 software 文件夹）"
+            style={{ flex: 1 }}
+          />
+          <Button appearance="secondary" onClick={() => loadPackages(pkgDir)}>
+            刷新
+          </Button>
+        </div>
+        {packages.length === 0 ? (
+          <div className="oc-list-sub" style={{ marginTop: 10 }}>
+            {pkgMsg || '目录中暂无安装包'}
+          </div>
+        ) : (
+          <div className="oc-list oc-scroll">
+            {packages.map((pkg) => (
+              <div className="oc-list-row" key={pkg.path}>
+                <div className="oc-list-main">
+                  <div className="oc-list-title">{pkg.name}</div>
+                  <div className="oc-list-sub">{formatSize(pkg.size)}</div>
+                </div>
+                <Button size="small" onClick={() => install(pkg.path)}>
+                  安装
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        {pkgMsg && packages.length > 0 && (
+          <div className="oc-list-sub" style={{ marginTop: 8 }}>
+            {pkgMsg}
+          </div>
+        )}
+      </div>
+
+      {/* ── 系统还原点 ── */}
+      <div className="oc-panel" style={{ marginTop: 12 }}>
+        <div className="oc-panel-title">系统还原点</div>
+        <div className="oc-list-sub" style={{ marginBottom: 10 }}>
+          装软件或改设置前先建一个还原点，出问题可以回滚。Windows 默认 24 小时内只允许创建一个，这是系统限制
+        </div>
+        <div className="oc-actions">
+          <Button appearance="primary" onClick={createPoint} disabled={pointBusy}>
+            {pointBusy ? '正在请求…' : '创建还原点'}
+          </Button>
+          <Button appearance="secondary" onClick={loadPoints} disabled={pointBusy}>
+            刷新列表
+          </Button>
+        </div>
+        {pointMsg && (
+          <div className="oc-list-sub" style={{ marginTop: 8 }}>
+            {pointMsg}
+          </div>
+        )}
+        {points.length > 0 && (
+          <div className="oc-list oc-scroll">
+            {points.map((pt: any, index: number) => (
+              <div className="oc-list-row" key={index}>
+                <div className="oc-list-main">
+                  <div className="oc-list-title">{pt.Description || '（无描述）'}</div>
+                  <div className="oc-list-sub">{String(pt.CreationTime ?? '')}</div>
                 </div>
               </div>
             ))}

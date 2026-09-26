@@ -42,6 +42,10 @@ export interface OcApi {
   analyze_cleanup(): Promise<any>
   run_cleanup(keys: string[]): Promise<any>
   run_netdiag(): Promise<any>
+  list_packages(directory?: string): Promise<any>
+  install_package(path: string): Promise<any>
+  list_restore_points(): Promise<any>
+  create_restore_point(description?: string): Promise<any>
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
@@ -125,6 +129,10 @@ const MOCK_API: OcApi = {
   async analyze_cleanup() { return { items: [], total: 0 } },
   async run_cleanup() { return { ok: false, freed: 0, details: ['开发预览模式：无法执行清理'] } },
   async run_netdiag() { return { items: [], okCount: 0, total: 0, healthy: false } },
+  async list_packages() { return { ok: true, dir: '-', items: [], message: '开发预览模式：无数据' } },
+  async install_package() { return { ok: false, message: '开发预览模式：无法安装' } },
+  async list_restore_points() { return { ok: true, points: [], message: '开发预览模式：无数据' } },
+  async create_restore_point() { return { ok: false, message: '开发预览模式：无法创建还原点' } },
   async get_hardware() { return EMPTY_HARDWARE },
   async get_metrics() {
     return {

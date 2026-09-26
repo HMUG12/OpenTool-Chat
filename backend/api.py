@@ -171,6 +171,30 @@ class Api:
 
         return run_diagnostics()
 
+    def list_packages(self, directory: str = "") -> dict[str, Any]:
+        """列出离线软件目录里的安装包。"""
+        from .core.software import list_packages
+
+        return list_packages(directory)
+
+    def install_package(self, path: str) -> dict[str, Any]:
+        """启动一个安装包（交给系统安装向导）。"""
+        from .core.software import install
+
+        return install(path)
+
+    def list_restore_points(self) -> dict[str, Any]:
+        """列出系统还原点（只读）。"""
+        from .core.restore import list_points
+
+        return list_points()
+
+    def create_restore_point(self, description: str = "") -> dict[str, Any]:
+        """创建系统还原点（需要管理员确认）。"""
+        from .core.restore import create_point
+
+        return create_point(description)
+
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
         if spec is None:
