@@ -195,6 +195,36 @@ class Api:
 
         return create_point(description)
 
+    def export_diagnostics(self) -> dict[str, Any]:
+        """生成诊断包（系统信息 + 体检 + 事件日志）到桌面。"""
+        from .core.logs import export
+
+        return export()
+
+    def list_processes(self, limit: int = 40) -> dict[str, Any]:
+        """按内存占用列出进程。"""
+        from .core.procs import list_processes
+
+        return list_processes(limit)
+
+    def kill_process(self, pid: int) -> dict[str, Any]:
+        """结束指定进程（系统关键进程会被拒绝）。"""
+        from .core.procs import kill_process
+
+        return kill_process(pid)
+
+    def list_services(self, limit: int = 150) -> dict[str, Any]:
+        """列出 Windows 服务。"""
+        from .core.procs import list_services
+
+        return list_services(limit)
+
+    def list_startup(self) -> dict[str, Any]:
+        """列出开机启动项。"""
+        from .core.procs import list_startup
+
+        return list_startup()
+
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
         if spec is None:

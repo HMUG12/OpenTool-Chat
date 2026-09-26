@@ -46,6 +46,11 @@ export interface OcApi {
   install_package(path: string): Promise<any>
   list_restore_points(): Promise<any>
   create_restore_point(description?: string): Promise<any>
+  export_diagnostics(): Promise<any>
+  list_processes(limit?: number): Promise<any>
+  kill_process(pid: number): Promise<any>
+  list_services(limit?: number): Promise<any>
+  list_startup(): Promise<any>
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
@@ -133,6 +138,11 @@ const MOCK_API: OcApi = {
   async install_package() { return { ok: false, message: '开发预览模式：无法安装' } },
   async list_restore_points() { return { ok: true, points: [], message: '开发预览模式：无数据' } },
   async create_restore_point() { return { ok: false, message: '开发预览模式：无法创建还原点' } },
+  async export_diagnostics() { return { ok: false, path: '', size: 0, parts: [], message: '开发预览模式：无法生成诊断包' } },
+  async list_processes() { return { items: [], total: 0 } },
+  async kill_process() { return { ok: false, message: '开发预览模式：无法结束进程' } },
+  async list_services() { return { items: [], total: 0 } },
+  async list_startup() { return { items: [], total: 0 } },
   async get_hardware() { return EMPTY_HARDWARE },
   async get_metrics() {
     return {

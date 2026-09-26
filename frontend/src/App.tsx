@@ -31,8 +31,9 @@ import UpdatePage from './pages/UpdatePage'
 import WallpaperPage from './pages/WallpaperPage'
 import HealthPage from './pages/HealthPage'
 import MaintenancePage from './pages/MaintenancePage'
+import DiagnosticsPage from './pages/DiagnosticsPage'
 
-type PageId = 'health' | 'maintenance' | 'dashboard' | 'music' | 'wallpaper' | 'tools' | 'plugins' | 'security' | 'update' | 'settings' | 'about'
+type PageId = 'health' | 'maintenance' | 'diagnostics' | 'dashboard' | 'music' | 'wallpaper' | 'tools' | 'plugins' | 'security' | 'update' | 'settings' | 'about'
 
 interface Toast {
   ok: boolean
@@ -139,6 +140,7 @@ export default function App() {
   const navItems: NavItem[] = [
     { id: 'health', label: '一键体检', icon: <ShieldRegular fontSize={16} /> },
     { id: 'maintenance', label: '维护', icon: <ToolboxRegular fontSize={16} /> },
+    { id: 'diagnostics', label: '诊断', icon: <GaugeRegular fontSize={16} /> },
     { id: 'dashboard', label: '系统状态', icon: <GaugeRegular fontSize={16} /> },
     { id: 'music', label: '音乐', icon: <MusicNote1Regular fontSize={16} /> },
     { id: 'wallpaper', label: '壁纸', icon: <SettingsRegular fontSize={16} /> },
@@ -158,6 +160,8 @@ export default function App() {
         return <HealthPage />
       case 'maintenance':
         return <MaintenancePage />
+      case 'diagnostics':
+        return <DiagnosticsPage />
       case 'tools':
         return (
           <ToolsPage
