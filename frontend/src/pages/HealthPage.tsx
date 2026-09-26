@@ -8,6 +8,8 @@ export default function HealthPage() {
   const [repairs, setRepairs] = useState<any[]>([])
   const [running, setRunning] = useState('')
   const [msg, setMsg] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const [reportPath, setReportPath] = useState('')
 
   useEffect(() => {
     void api
@@ -37,6 +39,19 @@ export default function HealthPage() {
       setMsg('执行失败，请稍后重试')
     } finally {
       setRunning('')
+    }
+  }
+
+  const exportReport = async () => {
+    setExporting(true)
+    setReportPath('')
+    try {
+      const outcome = await api.export_report()
+      setReportPath(outcome?.ok ? outcome.path : (outcome?.content ?? '导出失败'))
+    } catch {
+      setReportPath('导出失败，请稍后重试')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -89,6 +104,22 @@ export default function HealthPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        <div className="oc-actions" style={{ marginTop: 14, justifyContent: 'center' }}>
+          <Button
+            size="small"
+            appearance="secondary"
+            onClick={exportReport}
+            disabled={exporting}
+          >
+            {exporting ? '正在生成…' : '导出报修报告'}
+          </Button>
+        </div>
+        {reportPath && (
+          <div className="oc-list-sub" style={{ marginTop: 8, textAlign: 'center' }}>
+            已保存到：{reportPath}
           </div>
         )}
       </div>

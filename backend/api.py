@@ -147,6 +147,12 @@ class Api:
 
         return run_repair(key)
 
+    def export_report(self) -> dict[str, Any]:
+        """导出报修信息报告到桌面，返回 {ok, path, content}。"""
+        from .core.report import export
+
+        return export()
+
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
         if spec is None:
