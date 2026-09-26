@@ -299,6 +299,18 @@ class LanServer:
             del self._events[:-500]
         self._save_event(event)
 
+    def log_event(
+        self,
+        node_id: str,
+        node_name: str,
+        action: str,
+        detail: str,
+        ok: bool,
+        message: str,
+    ) -> None:
+        """对外记录一条事件（供定时任务等模块使用）。"""
+        self._log(node_id, node_name, action, detail, ok, message)
+
     def reset_code(self) -> str:
         with self._lock:
             self.pairing_code = pairing_code()

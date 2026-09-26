@@ -49,6 +49,8 @@ export interface OcApi {
   lan_join(server_url?: string, code?: string): Promise<any>
   lan_leave(): Promise<any>
   lan_config(): Promise<any>
+  lan_schedule(): Promise<any>
+  lan_set_schedule(enabled?: boolean, time_str?: string, action?: string, groups?: string[]): Promise<any>
   lan_set_config(port?: number, proxy?: string, server_url?: string, auto_start?: boolean): Promise<any>
   apply_role(role: string): Promise<any>
   lan_pick_file(): Promise<any>
@@ -192,6 +194,10 @@ const MOCK_API: OcApi = {
   async lan_config() {
     return { role: '', mode: 'single', port: 38900, proxy: '', serverUrl: '', autoStart: true }
   },
+  async lan_schedule() {
+    return { enabled: false, time: '08:00', action: 'checkup', groups: [], payload: {}, lastRun: '' }
+  },
+  async lan_set_schedule() { return { ok: true, message: '开发预览模式', plan: await MOCK_API.lan_schedule() } },
   async lan_set_config() { return { ok: true, message: '开发预览模式', config: await MOCK_API.lan_config() } },
   async apply_role() { return { ok: true, message: '开发预览模式' } },
   async lan_pick_file() { return { ok: false, path: '', message: '开发预览模式：无法打开文件选择框' } },

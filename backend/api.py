@@ -45,6 +45,14 @@ class Api:
         except Exception:
             pass
 
+        # 定时任务调度（A 端按计划下发指令，未启用时线程只是空转检查）
+        try:
+            from .net import scheduler
+
+            scheduler.scheduler.start()
+        except Exception:
+            pass
+
     # pywebview 窗口创建后回调注入，用于窗口控制
     def attach_window(self, window: Any) -> None:
         self._window = window
@@ -237,6 +245,45 @@ class Api:
         result = client.stop()
         config.set("lan_mode", "single")
         return result
+
+    def lan_schedule(self) -> dict[str, Any]:
+        """A 端：定时任务计划（每天按时对在线设备下发指令）。"""
+        from .net import scheduler
+
+        return scheduler.plan()
+
+    def lan_set_schedule(
+        self,
+        enabled: bool | None = None,
+        time_str: str | None = None,
+        action: str | None = None,
+        groups: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """A 端：设置定时任务。
+
+        time_str 形如 "08:00"；groups 留空表示所有分组。
+        """
+        from .net import scheduler
+
+        plan = dict(scheduler.plan())
+        if enabled is not None:
+            plan["enabled"] = bool(enabled)
+        if time_str is not None:
+            value = str(time_str).strip()
+            parts = value.split(":")
+            if len(parts) != 2 or not all(part.isdigit() for part in parts):
+                return {"ok": False, "message": "时间格式应为 HH:MM"}
+            hour, minute = int(parts[0]), int(parts[1])
+            if not (0 <= hour < 24 and 0 <= minute < 60):
+                return {"ok": False, "message": "时间超出范围"}
+            plan["time"] = f"{hour:02d}:{minute:02d}"
+        if action is not None:
+            plan["action"] = str(action).strip()
+        if groups is not None:
+            plan["groups"] = [str(item) for item in groups]
+        plan.pop("lastRun", None)   # 修改计划后允许今天重新触发一次
+        config.set("lan_schedule", plan)
+        return {"ok": True, "message": "定时计划已保存", "plan": plan}
 
     def lan_config(self) -> dict[str, Any]:
         """A/B 端身份与网络配置（端口 / 代理 / 服务器地址 / 自启动）。"""

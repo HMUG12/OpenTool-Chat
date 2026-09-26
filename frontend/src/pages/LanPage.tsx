@@ -72,6 +72,9 @@ export default function LanPage() {
   const [portInput, setPortInput] = useState('38900')
   const [proxyInput, setProxyInput] = useState('')
   const [groupFilter, setGroupFilter] = useState('')
+  const [schedule, setSchedule] = useState<any>(null)
+  const [scheduleTime, setScheduleTime] = useState('08:00')
+  const [scheduleAction, setScheduleAction] = useState('checkup')
 
   const notify = (text: string) => {
     setMsg(text)
@@ -105,6 +108,12 @@ export default function LanPage() {
     await load(true)
   }
 
+  const saveSchedule = async (enabled: boolean) => {
+    const result = await api.lan_set_schedule(enabled, scheduleTime.trim(), scheduleAction.trim())
+    notify(result?.message ?? '')
+    await load(true)
+  }
+
   const editMeta = async (node: any) => {
     const alias = window.prompt('设备备注名（留空则用原始名称）', node.alias || '')
     if (alias === null) return
@@ -118,13 +127,14 @@ export default function LanPage() {
   const load = async (silent = false) => {
     if (!silent) setBusy(true)
     try {
-      const [s, n, e, box, recv, cfg] = await Promise.all([
+      const [s, n, e, box, recv, cfg, sch] = await Promise.all([
         api.lan_status(),
         api.lan_nodes(),
         api.lan_events(60),
         api.lan_inbox(),
         api.lan_receive_dir(),
         api.lan_config(),
+        api.lan_schedule(),
       ])
       setStatus(s)
       setNodes(n ?? [])
@@ -133,6 +143,9 @@ export default function LanPage() {
       setReceivePath(recv ?? '')
       setPortInput(String(cfg?.port ?? 38900))
       setProxyInput(cfg?.proxy ?? '')
+      setSchedule(sch)
+      setScheduleTime(String(sch?.time ?? '08:00'))
+      setScheduleAction(String(sch?.action ?? 'checkup'))
     } catch {
       /* 首次读取失败保持空态 */
     } finally {
@@ -297,6 +310,50 @@ export default function LanPage() {
               <Button appearance="secondary" onClick={stopServer}>
                 停止服务
               </Button>
+            </div>
+
+            {/* 定时任务：每天按时对在线设备下发指令 */}
+            <div
+              style={{
+                marginTop: 14,
+                borderTop: '1px solid var(--oc-border)',
+                paddingTop: 12,
+              }}
+            >
+              <div className="oc-list-title">定时任务</div>
+              <div className="oc-searchbar" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+                <span className="oc-list-sub">时间</span>
+                <Input
+                  value={scheduleTime}
+                  onChange={(_e, data) => setScheduleTime(data.value)}
+                  placeholder="HH:MM"
+                  style={{ width: 92 }}
+                />
+                <span className="oc-list-sub">动作</span>
+                <Input
+                  value={scheduleAction}
+                  onChange={(_e, data) => setScheduleAction(data.value)}
+                  placeholder="checkup"
+                  style={{ width: 112 }}
+                />
+                <Button appearance="primary" onClick={() => void saveSchedule(true)}>
+                  启用
+                </Button>
+                <Button appearance="secondary" onClick={() => void saveSchedule(false)}>
+                  停用
+                </Button>
+              </div>
+              <div className="oc-list-sub" style={{ marginTop: 6 }}>
+                {schedule?.enabled
+                  ? `已启用：每天 ${schedule.time} 对${
+                      (schedule.groups ?? []).length
+                        ? '「' + (schedule.groups ?? []).join('、') + '」'
+                        : '全部'
+                    }设备执行 ${schedule.action}${
+                      schedule.lastRun ? ` · 上次执行 ${schedule.lastRun}` : ''
+                    }`
+                  : '未启用 · 可设为每天自动体检（只对在线设备下发）'}
+              </div>
             </div>
           </>
         ) : (
