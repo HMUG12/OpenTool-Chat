@@ -15,14 +15,18 @@ from __future__ import annotations
 
 import json
 import platform
+import shutil
 import threading
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from ..core.config import config
-from .commands import execute
+from ..core.paths import config_dir
+from .commands import collect_files, execute
 from .proto import PROTOCOL_VERSION, REPORT_INTERVAL, make_token
 
 _TIMEOUT = 20.0
@@ -57,6 +61,16 @@ def _node_id() -> str:
         value = make_token()[:12]
         config.set("lan_node_id", value)
     return value
+
+
+def receive_dir() -> Path:
+    """学生机接收老师机下发文件的目录（保证可写）。"""
+    folder = config_dir() / "lan_received"
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+    return folder
 
 
 def _foreground_app() -> str:
@@ -291,6 +305,79 @@ class LanClient:
         if commands:
             self._run_commands(commands, server, token)
 
+    def _receive_file(self, server: str, token: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """接收老师机下发的文件（分块写入磁盘，不吃内存）。"""
+        file_id = str(payload.get("fileId") or "")
+        name = Path(str(payload.get("name") or "file.bin")).name
+        if not file_id:
+            return {"ok": False, "message": "指令缺少文件标识", "data": {}}
+
+        target = receive_dir() / name
+        url = f"{server.rstrip('/')}/api/file/{file_id}?token={quote(token)}"
+        try:
+            request = urllib.request.Request(url)
+            with _opener.open(request, timeout=900) as resp, target.open("wb") as handle:
+                shutil.copyfileobj(resp, handle, 1024 * 1024)
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            return {"ok": False, "message": f"接收失败：{exc}", "data": {}}
+
+        try:
+            size = target.stat().st_size
+        except OSError:
+            size = 0
+        return {
+            "ok": True,
+            "message": f"已接收 {name}（{size / 1048576:.1f} MB）",
+            "data": {"path": str(target)},
+        }
+
+    def _send_collection(
+        self, server: str, token: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """把指定目录打包上传给老师机（收作业）。"""
+        paths = payload.get("paths") if isinstance(payload.get("paths"), list) else []
+        if not paths:
+            paths = [str(Path.home() / "Desktop")]
+        result = collect_files([str(item) for item in paths])
+        if not result.get("ok"):
+            return result
+
+        info = result.get("data") or {}
+        zip_path = Path(str(info.get("zip") or ""))
+        if not zip_path.is_file():
+            return {"ok": False, "message": "打包结果丢失", "data": {}}
+
+        name = f"{platform.node()}_{time.strftime('%Y%m%d_%H%M%S')}.zip"
+        url = f"{server.rstrip('/')}/api/upload?token={quote(token)}&name={quote(name)}"
+        try:
+            payload_bytes = zip_path.read_bytes()
+        except OSError as exc:
+            return {"ok": False, "message": f"读取打包结果失败：{exc}", "data": {}}
+
+        request = urllib.request.Request(
+            url,
+            data=payload_bytes,
+            method="POST",
+            headers={"Content-Type": "application/octet-stream"},
+        )
+        try:
+            with _opener.open(request, timeout=900) as resp:
+                data = json.loads(resp.read().decode("utf-8", "ignore"))
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            return {"ok": False, "message": f"上传失败：{exc}", "data": {}}
+
+        try:
+            zip_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        if not data.get("ok"):
+            return {"ok": False, "message": str(data.get("message") or "老师机未接受"), "data": {}}
+        return {
+            "ok": True,
+            "message": f"已上交 {len(payload_bytes) / 1048576:.1f} MB（{info.get('count', 0)} 个文件）",
+            "data": {},
+        }
+
     def _run_commands(self, commands: list[Any], server: str, token: str) -> None:
         results = []
         for command in commands:
@@ -299,7 +386,12 @@ class LanClient:
             action = str(command.get("action") or "")
             payload = command.get("payload") if isinstance(command.get("payload"), dict) else {}
             started = time.time()
-            outcome = execute(action, payload)
+            if action == "push_file":
+                outcome = self._receive_file(server, token, payload)
+            elif action == "pull_file":
+                outcome = self._send_collection(server, token, payload)
+            else:
+                outcome = execute(action, payload)
             results.append(
                 {
                     "seq": command.get("seq"),

@@ -238,6 +238,64 @@ class Api:
         config.set("lan_mode", "single")
         return result
 
+    def lan_pick_file(self) -> dict[str, Any]:
+        """老师机：弹出文件选择框，返回待下发文件的路径。"""
+        if self._window is None:
+            return {"ok": False, "path": "", "message": "窗口未就绪"}
+        try:
+            import webview
+
+            result = self._window.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=("所有文件 (*.*)",),
+            )
+        except Exception as exc:
+            return {"ok": False, "path": "", "message": f"打开文件选择框失败：{exc}"}
+        if not result:
+            return {"ok": False, "path": "", "message": "未选择文件"}
+        return {"ok": True, "path": str(result[0]), "message": ""}
+
+    def lan_push_file(self, node_ids: list[str], path: str) -> dict[str, Any]:
+        """老师机：把本机文件下发给选中设备。"""
+        from .net.server import server
+
+        return server.push_file([str(item) for item in (node_ids or [])], str(path or ""))
+
+    def lan_set_node_meta(
+        self, node_id: str, alias: str = "", group: str = ""
+    ) -> dict[str, Any]:
+        """老师机：设置设备备注名与分组。"""
+        from .net.server import server
+
+        return server.set_meta(str(node_id), alias, group)
+
+    def lan_inbox(self) -> list[dict[str, Any]]:
+        """老师机：已回收的文件列表（收作业结果）。"""
+        from .net.server import server
+
+        return server.inbox_files()
+
+    def lan_open_inbox(self) -> bool:
+        """打开接收目录（收作业归档位置）。"""
+        from .net.server import inbox_dir
+
+        ok, _ = open_in_explorer(inbox_dir())
+        return ok
+
+    def lan_receive_dir(self) -> str:
+        """学生机：下发文件的接收目录。"""
+        from .net.client import receive_dir
+
+        return str(receive_dir())
+
+    def lan_open_receive_dir(self) -> bool:
+        """打开学生机接收目录。"""
+        from .net.client import receive_dir
+
+        ok, _ = open_in_explorer(receive_dir())
+        return ok
+
     def url_alerts(self) -> list[dict[str, Any]]:
         """取出剪贴板监听产生的风险网址告警（取出即清空）。"""
         from .core.url_watch import alerts

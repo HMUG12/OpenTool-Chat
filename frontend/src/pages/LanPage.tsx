@@ -8,6 +8,18 @@ const ACTION_GROUPS: { id: string; label: string; payload?: () => any }[] = [
   { id: 'cleanup', label: '磁盘清理' },
 ]
 
+function formatSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let value = bytes
+  let index = 0
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024
+    index += 1
+  }
+  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`
+}
+
 function levelClass(value: number | undefined): string {
   if (value === undefined || value === null) return ''
   if (value >= 88) return 'warn'
@@ -54,23 +66,56 @@ export default function LanPage() {
   const [serverUrl, setServerUrl] = useState('')
   const [code, setCode] = useState('')
   const [messageText, setMessageText] = useState('')
+  const [inbox, setInbox] = useState<any[]>([])
+  const [collectPath, setCollectPath] = useState('')
+  const [receivePath, setReceivePath] = useState('')
 
   const notify = (text: string) => {
     setMsg(text)
     window.setTimeout(() => setMsg(''), 4000)
   }
 
+  const pushFile = async () => {
+    if (!selected.length) {
+      notify('请先勾选要接收文件的设备')
+      return
+    }
+    const picked = await api.lan_pick_file()
+    if (!picked?.ok) {
+      notify(picked?.message ?? '未选择文件')
+      return
+    }
+    notify('正在下发，请稍候…')
+    const result = await api.lan_push_file(selected, picked.path)
+    notify(result?.message ?? '')
+    await load(true)
+  }
+
+  const editMeta = async (node: any) => {
+    const alias = window.prompt('设备备注名（留空则用原始名称）', node.alias || '')
+    if (alias === null) return
+    const group = window.prompt('分组 / 教室（留空则不分组）', node.group || '')
+    if (group === null) return
+    const result = await api.lan_set_node_meta(node.id, alias, group)
+    notify(result?.message ?? '')
+    await load(true)
+  }
+
   const load = async (silent = false) => {
     if (!silent) setBusy(true)
     try {
-      const [s, n, e] = await Promise.all([
+      const [s, n, e, box, recv] = await Promise.all([
         api.lan_status(),
         api.lan_nodes(),
         api.lan_events(60),
+        api.lan_inbox(),
+        api.lan_receive_dir(),
       ])
       setStatus(s)
       setNodes(n ?? [])
       setEvents(e ?? [])
+      setInbox(box ?? [])
+      setReceivePath(recv ?? '')
     } catch {
       /* 首次读取失败保持空态 */
     } finally {
@@ -209,6 +254,10 @@ export default function LanPage() {
                 <div className="oc-stat-value">{server.port}</div>
                 <div className="oc-stat-label">服务端口</div>
               </div>
+              <div className={`oc-stat ${(server.offlineCount ?? 0) > 0 ? 'danger' : ''}`}>
+                <div className="oc-stat-value">{server.offlineCount ?? 0}</div>
+                <div className="oc-stat-label">离线设备</div>
+              </div>
             </div>
             <div className="oc-actions" style={{ marginTop: 12 }}>
               <Button appearance="secondary" onClick={resetCode}>
@@ -242,7 +291,11 @@ export default function LanPage() {
                 已连接：{client.teacher}（{client.server}）· 节点 ID {client.nodeId}
               </div>
               <div className="oc-list-sub">最近上报：{formatTime(client.lastReport)}</div>
+              <div className="oc-list-sub">接收目录：{receivePath || '—'}</div>
               <div className="oc-actions" style={{ marginTop: 10 }}>
+                <Button appearance="secondary" onClick={() => void api.lan_open_receive_dir()}>
+                  打开接收目录
+                </Button>
                 <Button appearance="secondary" onClick={leave}>
                   断开连接
                 </Button>
@@ -361,8 +414,9 @@ export default function LanPage() {
                       onClick={(event) => event.stopPropagation()}
                     />
                     <div className="oc-toolcard-head">
-                      <div className="oc-toolcard-name">{node.name}</div>
+                      <div className="oc-toolcard-name">{node.displayName || node.name}</div>
                       <div className="oc-toolcard-meta">
+                        {node.group ? `[${node.group}] ` : ''}
                         {node.ip} · {node.online ? '在线' : `离线（${formatTime(node.lastSeen)}）`}
                       </div>
                     </div>
@@ -378,6 +432,16 @@ export default function LanPage() {
                     {node.info?.foreground ? ` · 前台：${node.info.foreground}` : ''}
                   </div>
                   <div className="oc-actions">
+                    <Button
+                      size="small"
+                      appearance="subtle"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        void editMeta(node)
+                      }}
+                    >
+                      备注/分组
+                    </Button>
                     <Button
                       size="small"
                       appearance="subtle"
@@ -423,6 +487,31 @@ export default function LanPage() {
           )}
 
           {nodes.length > 0 && (
+            <div className="oc-searchbar" style={{ marginTop: 10, flexWrap: 'wrap' }}>
+              <Button appearance="primary" onClick={pushFile}>
+                下发文件到选中设备…
+              </Button>
+              <Input
+                value={collectPath}
+                onChange={(_e, data) => setCollectPath(data.value)}
+                placeholder="收作业目录（学生机上的路径，留空＝桌面）"
+                style={{ flex: 1, minWidth: 220 }}
+              />
+              <Button
+                appearance="secondary"
+                onClick={() =>
+                  void sendAction(
+                    'pull_file',
+                    collectPath.trim() ? { paths: [collectPath.trim()] } : {}
+                  )
+                }
+              >
+                收作业
+              </Button>
+            </div>
+          )}
+
+          {nodes.length > 0 && (
             <div className="oc-searchbar" style={{ marginTop: 10 }}>
               <Input
                 value={messageText}
@@ -442,6 +531,41 @@ export default function LanPage() {
               >
                 发送消息
               </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 收件箱（收作业归档） ── */}
+      {server?.running && (
+        <div className="oc-panel" style={{ marginTop: 12 }}>
+          <div className="oc-panel-title">
+            收件箱（{inbox.length}）
+            <Button
+              size="small"
+              appearance="secondary"
+              style={{ marginLeft: 10 }}
+              onClick={() => void api.lan_open_inbox()}
+            >
+              打开目录
+            </Button>
+          </div>
+          {inbox.length === 0 ? (
+            <div className="oc-hint">
+              还没有收到文件。点「收作业」后，学生机打包的结果会归档到这里。
+            </div>
+          ) : (
+            <div className="oc-list oc-scroll">
+              {inbox.map((item, index) => (
+                <div className="oc-list-row" key={index}>
+                  <div className="oc-list-main">
+                    <div className="oc-list-title">{item.name}</div>
+                    <div className="oc-list-sub">
+                      {item.node} · {formatSize(item.size)} · {formatTime(item.time)}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -48,6 +48,13 @@ export interface OcApi {
   lan_reset_code(): Promise<string>
   lan_join(server_url?: string, code?: string): Promise<any>
   lan_leave(): Promise<any>
+  lan_pick_file(): Promise<any>
+  lan_push_file(node_ids: string[], path: string): Promise<any>
+  lan_set_node_meta(node_id: string, alias?: string, group?: string): Promise<any>
+  lan_inbox(): Promise<any[]>
+  lan_open_inbox(): Promise<boolean>
+  lan_receive_dir(): Promise<string>
+  lan_open_receive_dir(): Promise<boolean>
   search_music(keyword?: string): Promise<any[]>
   music_url(path: string): Promise<string>
   search_music_online(keyword: string, platform?: string): Promise<any[]>
@@ -179,6 +186,13 @@ const MOCK_API: OcApi = {
   async lan_reset_code() { return '------' },
   async lan_join() { return { ok: false, message: '开发预览模式：无法加入' } },
   async lan_leave() { return { ok: true, message: '开发预览模式' } },
+  async lan_pick_file() { return { ok: false, path: '', message: '开发预览模式：无法打开文件选择框' } },
+  async lan_push_file() { return { ok: false, message: '开发预览模式：无法下发文件' } },
+  async lan_set_node_meta() { return { ok: false, message: '开发预览模式' } },
+  async lan_inbox() { return [] },
+  async lan_open_inbox() { return false },
+  async lan_receive_dir() { return '-' },
+  async lan_open_receive_dir() { return false },
   async search_music() { return [] },
   async music_url(path) { return path },
   async search_music_online() { return [] },
