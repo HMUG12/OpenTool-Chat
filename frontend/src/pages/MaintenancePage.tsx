@@ -3,6 +3,7 @@ import { Button, Input, Spinner } from '@fluentui/react-components'
 import { api } from '../api'
 import HealthPage from './HealthPage'
 import DiagnosticsPage from './DiagnosticsPage'
+import TermPanel from '../components/TermPanel'
 
 function formatSize(bytes: number): string {
   if (!bytes || bytes <= 0) return '0 B'
@@ -419,7 +420,7 @@ function PortablePanel() {
   )
 }
 
-type Tab = 'checkup' | 'repair' | 'diagnostics' | 'portable'
+type Tab = 'checkup' | 'repair' | 'diagnostics' | 'term' | 'portable'
 
 export default function MaintenancePage() {
   const [tab, setTab] = useState<Tab>('checkup')
@@ -452,6 +453,12 @@ export default function MaintenancePage() {
             诊断
           </Button>
           <Button
+            appearance={tab === 'term' ? 'primary' : 'secondary'}
+            onClick={() => setTab('term')}
+          >
+            学期模式
+          </Button>
+          <Button
             appearance={tab === 'portable' ? 'primary' : 'secondary'}
             onClick={() => setTab('portable')}
           >
@@ -463,6 +470,7 @@ export default function MaintenancePage() {
       {tab === 'checkup' && <HealthPage />}
       {tab === 'repair' && <RepairPanel />}
       {tab === 'diagnostics' && <DiagnosticsPage />}
+      {tab === 'term' && <TermPanel />}
       {tab === 'portable' && <PortablePanel />}
     </div>
   )

@@ -84,6 +84,12 @@ export interface OcApi {
   ): Promise<any>
   kb_export_issue(description: string, category?: string): Promise<any>
   kb_import(payload: string): Promise<any>
+  term_modes(): Promise<any[]>
+  run_term_mode(mode: string): Promise<any>
+  export_mode_report(mode: string): Promise<any>
+  export_profile(note?: string): Promise<any>
+  import_profile(path: string): Promise<any>
+  pick_profile_file(): Promise<any>
   search_music(keyword?: string): Promise<any[]>
   music_url(path: string): Promise<string>
   search_music_online(keyword: string, platform?: string): Promise<any[]>
@@ -252,6 +258,18 @@ const MOCK_API: OcApi = {
   async kb_add() { return { ok: false, message: '开发预览模式' } },
   async kb_export_issue() { return { ok: false, path: '', message: '开发预览模式' } },
   async kb_import() { return { ok: false, message: '开发预览模式' } },
+  async term_modes() {
+    return [
+      { id: 'term_start', name: '开学模式', desc: '开学前检查' },
+      { id: 'exam', name: '考试模式', desc: '考试前检查' },
+      { id: 'holiday', name: '假期模式', desc: '放假前收尾' },
+    ]
+  },
+  async run_term_mode() { return { ok: false, items: [], okCount: 0, total: 0, message: '开发预览模式' } },
+  async export_mode_report() { return { ok: false, message: '开发预览模式' } },
+  async export_profile() { return { ok: false, message: '开发预览模式' } },
+  async import_profile() { return { ok: false, message: '开发预览模式' } },
+  async pick_profile_file() { return { ok: false, path: '', message: '开发预览模式' } },
   async search_music() { return [] },
   async music_url(path) { return path },
   async search_music_online() { return [] },

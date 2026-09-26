@@ -541,6 +541,58 @@ class Api:
 
         return import_entries(payload)
 
+    # ══════════════════════════════════════════════════════
+    # 学期模式与配置模板
+    # ══════════════════════════════════════════════════════
+
+    def term_modes(self) -> list[dict[str, Any]]:
+        """可用的学期模式（开学 / 考试 / 假期）。"""
+        from .core.profiles import MODES
+
+        return MODES
+
+    def run_term_mode(self, mode: str) -> dict[str, Any]:
+        """执行一套学期模式检查（开学 / 考试 / 假期）。"""
+        from .core.profiles import run_mode
+
+        return run_mode(mode)
+
+    def export_mode_report(self, mode: str) -> dict[str, Any]:
+        """执行检查并把报告导出到桌面。"""
+        from .core.profiles import export_report
+
+        return export_report(mode)
+
+    def export_profile(self, note: str = "") -> dict[str, Any]:
+        """把当前设置导出成配置模板（.ocbprofile）到桌面。"""
+        from .core.profiles import export_profile
+
+        return export_profile(note)
+
+    def import_profile(self, path: str) -> dict[str, Any]:
+        """导入配置模板并应用。"""
+        from .core.profiles import import_profile
+
+        return import_profile(path)
+
+    def pick_profile_file(self) -> dict[str, Any]:
+        """弹出文件选择框选择 .ocbprofile。"""
+        if self._window is None:
+            return {"ok": False, "path": "", "message": "窗口未就绪"}
+        try:
+            import webview
+
+            result = self._window.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=("配置模板 (*.ocbprofile)", "所有文件 (*.*)"),
+            )
+        except Exception as exc:
+            return {"ok": False, "path": "", "message": f"打开文件选择框失败：{exc}"}
+        if not result:
+            return {"ok": False, "path": "", "message": "未选择文件"}
+        return {"ok": True, "path": str(result[0]), "message": ""}
+
     def url_alerts(self) -> list[dict[str, Any]]:
         """取出剪贴板监听产生的风险网址告警（取出即清空）。"""
         from .core.url_watch import alerts
