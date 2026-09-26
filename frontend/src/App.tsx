@@ -8,6 +8,7 @@ import {
   Spinner,
 } from '@fluentui/react-components'
 import {
+  DesktopRegular,
   GaugeRegular,
   HardDriveRegular,
   InfoRegular,
@@ -29,6 +30,7 @@ import MusicPage from './pages/MusicPage'
 import WallpaperPage from './pages/WallpaperPage'
 import MaintenancePage from './pages/MaintenancePage'
 import HardwarePage from './pages/HardwarePage'
+import LanPage from './pages/LanPage'
 
 /**
  * 导航结构（已按使用习惯合并）：
@@ -40,6 +42,7 @@ type PageId =
   | 'maintenance'
   | 'dashboard'
   | 'hardware'
+  | 'lan'
   | 'tools'
   | 'music'
   | 'wallpaper'
@@ -166,6 +169,7 @@ export default function App() {
   const navItems: NavItem[] = [
     { id: 'dashboard', label: '系统状态', icon: <GaugeRegular fontSize={16} /> },
     { id: 'hardware', label: '硬件信息', icon: <HardDriveRegular fontSize={16} /> },
+    { id: 'lan', label: '机房管理', icon: <DesktopRegular fontSize={16} /> },
     { id: 'maintenance', label: '维护', icon: <ToolboxRegular fontSize={16} /> },
     { id: 'tools', label: '工具箱', icon: <ToolboxRegular fontSize={16} />, badge: tools.length },
     { id: 'music', label: '音乐', icon: <MusicNote1Regular fontSize={16} /> },
@@ -182,6 +186,8 @@ export default function App() {
 
   const renderPage = () => {
     switch (page) {
+      case 'lan':
+        return <LanPage />
       case 'maintenance':
         return <MaintenancePage />
       case 'dashboard':

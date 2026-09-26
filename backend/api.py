@@ -32,8 +32,18 @@ class Api:
     def __init__(self) -> None:
         self._window: Any = None
         self.tray_available: bool = False
+        self._lan_responder: Any = None
         registry.scan()
         monitor.start()
+
+        # 若上次以学生机模式运行，启动后自动恢复连接（老师机模式需手动开启服务）
+        try:
+            if str(config.get("lan_mode", "single")) == "student":
+                from .net.client import client
+
+                client.start()
+        except Exception:
+            pass
 
     # pywebview 窗口创建后回调注入，用于窗口控制
     def attach_window(self, window: Any) -> None:
@@ -129,6 +139,104 @@ class Api:
         from .core.security import set_settings
 
         return set_settings(clipboard, browser)
+
+    # ══════════════════════════════════════════════════════
+    # 机房协同（局域网老师机 / 学生机）
+    # ══════════════════════════════════════════════════════
+
+    def lan_status(self) -> dict[str, Any]:
+        """机房协同总状态：模式 + 服务端 + 客户端。"""
+        from .net.client import client
+        from .net.server import server
+
+        return {
+            "mode": str(config.get("lan_mode", "single") or "single"),
+            "server": server.status(),
+            "client": client.status(),
+        }
+
+    def lan_scan(self) -> list[dict[str, Any]]:
+        """学生机：搜索局域网内的老师机（3 秒超时）。"""
+        from .net.discovery import broadcast_search
+
+        return broadcast_search(timeout=3.0)
+
+    def lan_start_server(self, port: int = 38900) -> dict[str, Any]:
+        """老师机：启动服务端，并开启 UDP 发现应答。"""
+        import platform as _platform
+
+        from .net.discovery import DiscoveryResponder
+        from .net.server import server
+
+        result = server.start(port)
+        if result.get("ok"):
+            config.set("lan_mode", "teacher")
+            if self._lan_responder is None:
+                responder = DiscoveryResponder(
+                    server.port, _platform.node(), server.teacher_id
+                )
+                responder.start()
+                self._lan_responder = responder
+        return result
+
+    def lan_stop_server(self) -> dict[str, Any]:
+        from .net.server import server
+
+        result = server.stop()
+        if self._lan_responder is not None:
+            self._lan_responder.stop()
+            self._lan_responder = None
+        config.set("lan_mode", "single")
+        return result
+
+    def lan_nodes(self) -> list[dict[str, Any]]:
+        """老师机：已配对学生机列表（含在线状态与实时指标）。"""
+        from .net.server import server
+
+        return server.nodes()
+
+    def lan_events(self, limit: int = 100) -> list[dict[str, Any]]:
+        """老师机：操作事件日志。"""
+        from .net.server import server
+
+        return server.events(limit)
+
+    def lan_send(
+        self, node_ids: list[str], action: str, payload: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """老师机：向指定设备下发指令。"""
+        from .net.server import server
+
+        ids = [str(item) for item in (node_ids or [])]
+        return server.send(ids, str(action or ""), payload or {})
+
+    def lan_remove_node(self, node_id: str) -> dict[str, Any]:
+        from .net.server import server
+
+        return server.remove_node(str(node_id))
+
+    def lan_reset_code(self) -> str:
+        """老师机：重新生成配对码。"""
+        from .net.server import server
+
+        return server.reset_code()
+
+    def lan_join(self, server_url: str = "", code: str = "") -> dict[str, Any]:
+        """学生机：加入老师机（地址留空则局域网自动发现）。"""
+        from .net.client import client
+
+        result = client.start(server_url, code)
+        if result.get("ok"):
+            config.set("lan_mode", "student")
+        return result
+
+    def lan_leave(self) -> dict[str, Any]:
+        """学生机：断开与老师机的连接。"""
+        from .net.client import client
+
+        result = client.stop()
+        config.set("lan_mode", "single")
+        return result
 
     def url_alerts(self) -> list[dict[str, Any]]:
         """取出剪贴板监听产生的风险网址告警（取出即清空）。"""

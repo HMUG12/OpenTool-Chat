@@ -37,6 +37,17 @@ export interface OcApi {
   security_remove_whitelist(domain: string): Promise<any>
   security_settings(): Promise<any>
   set_security_settings(clipboard?: boolean, browser?: boolean): Promise<any>
+  lan_status(): Promise<any>
+  lan_scan(): Promise<any[]>
+  lan_start_server(port?: number): Promise<any>
+  lan_stop_server(): Promise<any>
+  lan_nodes(): Promise<any[]>
+  lan_events(limit?: number): Promise<any[]>
+  lan_send(node_ids: string[], action: string, payload?: any): Promise<any>
+  lan_remove_node(node_id: string): Promise<any>
+  lan_reset_code(): Promise<string>
+  lan_join(server_url?: string, code?: string): Promise<any>
+  lan_leave(): Promise<any>
   search_music(keyword?: string): Promise<any[]>
   music_url(path: string): Promise<string>
   search_music_online(keyword: string, platform?: string): Promise<any[]>
@@ -151,6 +162,23 @@ const MOCK_API: OcApi = {
   async security_remove_whitelist() { return { ok: true, message: '开发预览模式' } },
   async security_settings() { return { clipboard: true, browser: true } },
   async set_security_settings() { return { ok: true, settings: { clipboard: true, browser: true } } },
+  async lan_status() {
+    return {
+      mode: 'single',
+      server: { running: false, port: 38900, pairingCode: '------', nodeCount: 0, onlineCount: 0 },
+      client: { enabled: false, state: 'idle', message: '开发预览模式' },
+    }
+  },
+  async lan_scan() { return [] },
+  async lan_start_server() { return { ok: false, message: '开发预览模式：无法启动服务' } },
+  async lan_stop_server() { return { ok: true, message: '开发预览模式' } },
+  async lan_nodes() { return [] },
+  async lan_events() { return [] },
+  async lan_send() { return { ok: false, message: '开发预览模式：无法下发指令' } },
+  async lan_remove_node() { return { ok: false, message: '开发预览模式' } },
+  async lan_reset_code() { return '------' },
+  async lan_join() { return { ok: false, message: '开发预览模式：无法加入' } },
+  async lan_leave() { return { ok: true, message: '开发预览模式' } },
   async search_music() { return [] },
   async music_url(path) { return path },
   async search_music_online() { return [] },
