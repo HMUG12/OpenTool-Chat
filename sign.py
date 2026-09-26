@@ -174,14 +174,21 @@ def export_cer(target: Path) -> bool:
         return False
 
 
+def installers() -> list[Path]:
+    """待签名的安装包：A 端 / B 端（以及旧命名的兼容项）。"""
+    return [
+        ROOT / "installer" / "OpenClass-Box-A_Setup.exe",
+        ROOT / "installer" / "OpenClass-Box-B_Setup.exe",
+        ROOT / "installer" / "OpenClass-Box_Setup.exe",
+    ]
+
+
 def sign_all() -> int:
     targets: list[Path] = []
     exe = ROOT / "dist_build" / "OpenClass-Box" / "OpenClass-Box.exe"
     if exe.is_file():
         targets.append(exe)
-    setup = ROOT / "installer" / "OpenClass-Box_Setup.exe"
-    if setup.is_file():
-        targets.append(setup)
+    targets.extend(path for path in installers() if path.is_file())
     if not targets:
         print("[sign] 没有找到可签名的产物（先运行 pack.py）")
         return 1
@@ -195,10 +202,10 @@ def sign_all() -> int:
 
 def status() -> int:
     print(f"[sign] 本地证书：{_thumbprint() or '未生成（python sign.py init）'}")
-    for path in (
+    for path in [
         ROOT / "dist_build" / "OpenClass-Box" / "OpenClass-Box.exe",
-        ROOT / "installer" / "OpenClass-Box_Setup.exe",
-    ):
+        *installers(),
+    ]:
         if not path.is_file():
             continue
         out = _ps(f"(Get-AuthenticodeSignature '{path}').Status")
