@@ -29,6 +29,14 @@ export interface OcApi {
   url_alerts(): Promise<any[]>
   check_updates(force?: boolean): Promise<any[]>
   check_self_update(): Promise<any>
+  security_events(limit?: number): Promise<any[]>
+  security_stats(): Promise<any>
+  security_clear(): Promise<any>
+  security_whitelist(): Promise<string[]>
+  security_add_whitelist(domain: string): Promise<any>
+  security_remove_whitelist(domain: string): Promise<any>
+  security_settings(): Promise<any>
+  set_security_settings(clipboard?: boolean, browser?: boolean): Promise<any>
   search_music(keyword?: string): Promise<any[]>
   music_url(path: string): Promise<string>
   search_music_online(keyword: string, platform?: string): Promise<any[]>
@@ -61,7 +69,7 @@ export interface OcApi {
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
-  get_hardware_detail(): Promise<any>
+  get_hardware_detail(quick?: boolean): Promise<any>
   get_metrics(): Promise<Metrics>
   get_network(): Promise<NetworkInfo>
   get_ip(): Promise<IpInfo>
@@ -78,6 +86,7 @@ export interface OcApi {
   get_openwith_registered(): Promise<boolean>
   set_openwith_registered(enabled: boolean): Promise<boolean>
   get_close_to_tray(): Promise<boolean>
+  get_data_dir(): Promise<string>
   set_close_to_tray(enabled: boolean): Promise<boolean>
 }
 
@@ -134,6 +143,14 @@ const MOCK_API: OcApi = {
   async check_self_update() {
     return { ok: false, current: '-', latest: '', hasUpdate: false, url: '', publishedAt: '', message: '开发预览模式' }
   },
+  async security_events() { return [] },
+  async security_stats() { return { total: 0, today: 0, riskTotal: 0, riskToday: 0, whitelistCount: 0 } },
+  async security_clear() { return { ok: true, message: '开发预览模式' } },
+  async security_whitelist() { return [] },
+  async security_add_whitelist() { return { ok: false, message: '开发预览模式' } },
+  async security_remove_whitelist() { return { ok: true, message: '开发预览模式' } },
+  async security_settings() { return { clipboard: true, browser: true } },
+  async set_security_settings() { return { ok: true, settings: { clipboard: true, browser: true } } },
   async search_music() { return [] },
   async music_url(path) { return path },
   async search_music_online() { return [] },
@@ -165,7 +182,16 @@ const MOCK_API: OcApi = {
   async list_startup() { return { items: [], total: 0 } },
   async get_hardware() { return EMPTY_HARDWARE },
   async get_hardware_detail() {
-    return { gpus: [], boards: [], bios: [], memModules: [], physicalDisks: [], cpuTemp: null, tempSource: '' }
+    return {
+      gpus: [],
+      boards: [],
+      bios: [],
+      memModules: [],
+      physicalDisks: [],
+      cpuTemp: null,
+      tempSource: '',
+      fullReady: true,
+    }
   },
   async get_metrics() {
     return {
@@ -199,6 +225,7 @@ const MOCK_API: OcApi = {
   async get_openwith_registered() { return false },
   async set_openwith_registered() { return false },
   async get_close_to_tray() { return true },
+  async get_data_dir() { return '-' },
   async set_close_to_tray() { return true },
 }
 

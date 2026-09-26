@@ -34,19 +34,24 @@ class Config:
             # 配置损坏不应阻断启动，回落到默认值
             self._data = dict(_DEFAULTS)
 
-    def save(self) -> None:
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._path.write_text(
-            json.dumps(self._data, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+    def save(self) -> bool:
+        """写盘；失败返回 False（不抛异常，避免把界面操作带崩）。"""
+        try:
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            self._path.write_text(
+                json.dumps(self._data, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            return True
+        except OSError:
+            return False
 
     def get(self, key: str, default: Any = None) -> Any:
         return self._data.get(key, _DEFAULTS.get(key, default))
 
-    def set(self, key: str, value: Any) -> None:
+    def set(self, key: str, value: Any) -> bool:
         self._data[key] = value
-        self.save()
+        return self.save()
 
     def snapshot(self) -> dict[str, Any]:
         return dict(self._data)

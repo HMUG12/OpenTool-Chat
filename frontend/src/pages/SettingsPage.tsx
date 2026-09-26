@@ -59,6 +59,8 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
 
+  const [dataDir, setDataDir] = useState('')
+
   // ── 版本与更新 ──
   const [version, setVersion] = useState('')
   const [selfUpdate, setSelfUpdate] = useState<any>(null)
@@ -68,16 +70,18 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
   useEffect(() => {
     void (async () => {
       try {
-        const [a, o, c, info] = await Promise.all([
+        const [a, o, c, info, dir] = await Promise.all([
           api.get_autostart(),
           api.get_openwith_registered(),
           api.get_close_to_tray(),
           api.get_info(),
+          api.get_data_dir(),
         ])
         setAutostart(a)
         setOpenwith(o)
         setCloseToTray(c)
         setVersion(info.version)
+        setDataDir(dir)
       } catch {
         // 忽略：开发模式下拿不到真实值
       } finally {
@@ -282,11 +286,23 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
       </div>
 
       <div className="oc-panel-title" style={{ fontSize: 12, opacity: 0.8 }}>
-        工具目录
+        存储位置
       </div>
-      <Button appearance="secondary" onClick={() => void api.open_tool_dir()}>
-        打开 tools 目录
-      </Button>
+      <div className="oc-panel" style={{ marginBottom: 12 }}>
+        <div className="oc-info-row">
+          <span>配置与数据</span>
+          <span className="oc-mono">{dataDir || '读取中…'}</span>
+        </div>
+        <div className="oc-hint" style={{ marginTop: 8 }}>
+          所有设置会立即写入上面的目录。若程序安装在 Program Files 这类受保护位置，
+          会自动改用用户目录（%LOCALAPPDATA%\OpenClass-Box），保证设置一定保存成功。
+        </div>
+        <div className="oc-actions" style={{ marginTop: 10 }}>
+          <Button appearance="secondary" onClick={() => void api.open_tool_dir()}>
+            打开 tools 目录
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

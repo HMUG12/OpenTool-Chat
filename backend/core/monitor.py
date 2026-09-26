@@ -395,31 +395,24 @@ class SystemMonitor:
                 }
             )
 
-        aux = _query_wmi_aux()
-
-        # 显存修正：Win32_VideoController.AdapterRAM 是 32 位字段，8GB 显卡会被
-        # 截断成 4GB；以注册表 HardwareInformation.qwMemorySize 的真实值为准。
-        vram: dict[str, int] = {}
+        # 显卡：先用注册表取真实显存（秒级，且不会被 4GB 截断），
+        # 名称 / 驱动等由后台 WMI 查询补齐（见 _fill_wmi_aux）
+        gpus: list[dict[str, Any]] = []
         try:
             from .hardware_detail import gpu_vram_from_registry
 
-            vram = gpu_vram_from_registry()
+            for gpu_name, size in gpu_vram_from_registry().items():
+                gpus.append(
+                    {
+                        "name": gpu_name,
+                        "memoryGB": round(size / (1024 ** 3), 1),
+                        "driverVersion": "",
+                        "resolution": "",
+                        "memorySource": "registry",
+                    }
+                )
         except Exception:
-            vram = {}
-
-        gpus: list[dict[str, Any]] = []
-        for gpu_item in aux.get("gpus", []) or []:
-            if not isinstance(gpu_item, dict):
-                continue
-            gpu_name = str(gpu_item.get("name") or "")
-            memory = float(gpu_item.get("memoryGB") or 0) * (1024 ** 3)
-            if gpu_name in vram and vram[gpu_name] > memory:
-                gpu_item = {
-                    **gpu_item,
-                    "memoryGB": round(vram[gpu_name] / (1024 ** 3), 1),
-                    "memorySource": "registry",
-                }
-            gpus.append(gpu_item)
+            gpus = []
 
         info: dict[str, Any] = {
             "cpu": {
@@ -438,7 +431,7 @@ class SystemMonitor:
             "swap": {"total": swap.total, "used": swap.used, "percent": swap.percent},
             "disks": disks,
             "gpus": gpus,
-            "boards": aux.get("boards", []),
+            "boards": [],
             "os": {
                 "system": platform.system(),
                 "release": platform.release(),
@@ -447,12 +440,72 @@ class SystemMonitor:
                 "hostname": platform.node(),
             },
             "bootTime": psutil.boot_time(),
+            "hardwareReady": False,
         }
 
+        need_aux = False
         with self._lock:
             if self._static is None:
                 self._static = info
-            return self._static
+                need_aux = True
+            result = self._static
+
+        # 慢查询（WMI 显卡名/主板）放后台：界面先拿到快照，前端稍后再取一次完整信息
+        if need_aux:
+            threading.Thread(
+                target=self._fill_wmi_aux, daemon=True, name="oc-hw-aux"
+            ).start()
+        return result
+
+    def _fill_wmi_aux(self) -> None:
+        """后台补齐 WMI 硬件信息（显卡名称 / 主板），完成后置 hardwareReady。"""
+        try:
+            aux = _query_wmi_aux()
+        except Exception:
+            aux = {}
+
+        try:
+            from .hardware_detail import gpu_vram_from_registry
+
+            vram = gpu_vram_from_registry()
+        except Exception:
+            vram = {}
+
+        with self._lock:
+            if self._static is None:
+                return
+
+            merged: dict[str, dict[str, Any]] = {}
+            for gpu_item in aux.get("gpus", []) or []:
+                if not isinstance(gpu_item, dict):
+                    continue
+                gpu_name = str(gpu_item.get("name") or "")
+                memory = float(gpu_item.get("memoryGB") or 0) * (1024 ** 3)
+                if gpu_name in vram and vram[gpu_name] > memory:
+                    gpu_item = {
+                        **gpu_item,
+                        "memoryGB": round(vram[gpu_name] / (1024 ** 3), 1),
+                        "memorySource": "registry",
+                    }
+                merged[gpu_name] = gpu_item
+
+            # 注册表读到但 WMI 未报告的显卡也保留（显存值最准）
+            for gpu_item in self._static.get("gpus", []):
+                name = str(gpu_item.get("name") or "")
+                if not name:
+                    continue
+                if name not in merged:
+                    merged[name] = gpu_item
+                elif not merged[name].get("memoryGB"):
+                    merged[name]["memoryGB"] = gpu_item.get("memoryGB")
+
+            if merged:
+                self._static["gpus"] = list(merged.values())
+
+            boards = aux.get("boards", []) or []
+            if boards:
+                self._static["boards"] = boards
+            self._static["hardwareReady"] = True
 
     # ── 网络 └ IP ──────────────────────────────────────
 

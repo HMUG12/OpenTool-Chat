@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -32,9 +33,48 @@ def tools_dir() -> Path:
     return resource_path("tools")
 
 
+_data_root_cache: Path | None = None
+
+
+def _is_writable(path: Path) -> bool:
+    """真实写测试：目录存在不代表可写（Program Files 下就是只读）。"""
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".oc_write_test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def data_root() -> Path:
+    """可写数据目录（配置 / 壁纸 / 安全事件都放这里）。
+
+    优先程序目录下的 data/（便携模式）；当程序被安装到 C:\\Program Files
+    这类受保护位置时该目录不可写，此时回退 %LOCALAPPDATA%\\OpenClass-Box。
+    这是「设置无法保存」问题的根因修复。
+    """
+    global _data_root_cache
+    if _data_root_cache is not None:
+        return _data_root_cache
+
+    portable = app_root() / "data"
+    if _is_writable(portable):
+        _data_root_cache = portable
+        return portable
+
+    fallback = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "OpenClass-Box"
+    if not _is_writable(fallback):
+        fallback = Path.home() / ".openclass-box"
+        fallback.mkdir(parents=True, exist_ok=True)
+    _data_root_cache = fallback
+    return fallback
+
+
 def config_dir() -> Path:
-    """用户配置与运行时数据目录。"""
-    return resource_path("data")
+    """用户配置与运行时数据目录（保证可写）。"""
+    return data_root()
 
 
 def frontend_dist() -> Path:
@@ -59,6 +99,9 @@ def config_file() -> Path:
 
 
 def ensure_runtime_dirs() -> None:
-    """确保可写目录存在。"""
+    """确保可写目录存在（失败不阻断启动）。"""
     for d in (tools_dir(), config_dir()):
-        d.mkdir(parents=True, exist_ok=True)
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass

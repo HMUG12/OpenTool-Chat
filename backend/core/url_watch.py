@@ -43,21 +43,25 @@ def _read_clipboard() -> str:
 def _loop() -> None:
     while True:
         try:
-            text = _read_clipboard()
-            match = _URL_RE.search(text or "")
-            if match:
-                url = match.group(0)
-                now = time.time()
-                with _lock:
-                    fresh = now - _seen.get(url, 0.0) > _DEDUPE_TTL
+            from .security import record, settings
+
+            if settings()["clipboard"]:
+                text = _read_clipboard()
+                match = _URL_RE.search(text or "")
+                if match:
+                    url = match.group(0)
+                    now = time.time()
+                    with _lock:
+                        fresh = now - _seen.get(url, 0.0) > _DEDUPE_TTL
+                        if fresh:
+                            _seen[url] = now
                     if fresh:
-                        _seen[url] = now
-                if fresh:
-                    result = check_url(url)
-                    if result["level"] != "safe":
-                        with _lock:
-                            _alerts.append(result)
-                            del _alerts[:-_MAX_ALERTS]
+                        result = check_url(url)
+                        record(result, "clipboard")  # 全部记录，供安全中心展示
+                        if result["level"] != "safe":
+                            with _lock:
+                                _alerts.append(result)
+                                del _alerts[:-_MAX_ALERTS]
         except Exception:
             pass
         time.sleep(_INTERVAL)

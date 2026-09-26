@@ -162,10 +162,11 @@ export default function App() {
     window.setTimeout(() => setToast(null), result.ok ? 2600 : 5000)
   }, [])
 
+  // 顺序约定：系统状态 / 硬件信息 固定在前两位；安全 / 设置 / 关于 固定在最后三位
   const navItems: NavItem[] = [
-    { id: 'maintenance', label: '维护', icon: <ToolboxRegular fontSize={16} /> },
     { id: 'dashboard', label: '系统状态', icon: <GaugeRegular fontSize={16} /> },
     { id: 'hardware', label: '硬件信息', icon: <HardDriveRegular fontSize={16} /> },
+    { id: 'maintenance', label: '维护', icon: <ToolboxRegular fontSize={16} /> },
     { id: 'tools', label: '工具箱', icon: <ToolboxRegular fontSize={16} />, badge: tools.length },
     { id: 'music', label: '音乐', icon: <MusicNote1Regular fontSize={16} /> },
     { id: 'wallpaper', label: '壁纸', icon: <SettingsRegular fontSize={16} /> },

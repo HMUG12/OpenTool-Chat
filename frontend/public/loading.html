@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OpenClass-Box</title>
     <style>
+      :root {
+        --accent: #4cc2ff;
+      }
       html,
       body {
         margin: 0;
         height: 100%;
-        background: #1b1a19;
+        overflow: hidden;
         color: #e8e6e3;
+        background: radial-gradient(1200px 620px at 50% 18%, #242220 0%, #161514 58%, #101010 100%);
         font-family: -apple-system, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
       }
       .boot {
@@ -19,61 +23,164 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 18px;
-        padding: 0 36px;
-        text-align: center;
+        gap: 20px;
       }
-      .spinner {
-        width: 46px;
-        height: 46px;
-        border: 4px solid rgba(255, 255, 255, 0.15);
-        border-top-color: #4cc2ff;
+      .logo-wrap {
+        position: relative;
+        width: 98px;
+        height: 98px;
+        display: grid;
+        place-items: center;
+      }
+      .ring {
+        position: absolute;
+        inset: 0;
         border-radius: 50%;
-        animation: spin 0.9s linear infinite;
+        border: 2px solid rgba(76, 194, 255, 0.18);
+        border-top-color: var(--accent);
+        animation: spin 1.1s linear infinite;
       }
-      .t {
-        font-size: 14px;
-        letter-spacing: 0.08em;
-        opacity: 0.8;
-        line-height: 1.9;
+      .ring.inner {
+        inset: 11px;
+        border-top-color: rgba(76, 194, 255, 0.55);
+        animation-duration: 1.7s;
+        animation-direction: reverse;
+      }
+      .logo {
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+        background: linear-gradient(140deg, #2f6fed, #4cc2ff);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 12px 32px rgba(76, 194, 255, 0.35);
+        animation: pulse 2.4s ease-in-out infinite;
+      }
+      .logo svg {
+        width: 30px;
+        height: 30px;
+      }
+      .name {
+        font-size: 19px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        opacity: 0;
+        animation: fadeUp 0.7s ease forwards 0.15s;
+      }
+      .sub {
+        font-size: 12.5px;
+        letter-spacing: 0.16em;
+        color: rgba(232, 230, 227, 0.6);
+        opacity: 0;
+        animation: fadeUp 0.7s ease forwards 0.35s;
+      }
+      .dots {
+        display: flex;
+        gap: 6px;
+        margin-top: 2px;
+      }
+      .dots i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        opacity: 0.25;
+        animation: blink 1.2s infinite;
+      }
+      .dots i:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .dots i:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      .tip {
+        position: absolute;
+        bottom: 32px;
+        padding: 0 34px;
+        font-size: 12px;
+        line-height: 1.8;
+        text-align: center;
+        opacity: 0.5;
       }
       @keyframes spin {
         to {
           transform: rotate(360deg);
         }
       }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.06);
+        }
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 0.25;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="boot">
-      <div class="spinner" id="spin"></div>
-      <div class="t" id="tip">OpenClass-Box 启动中…</div>
+      <div class="logo-wrap">
+        <span class="ring"></span>
+        <span class="ring inner"></span>
+        <span class="logo">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 7h16v12H4z" />
+            <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+            <path d="M4 12h16" />
+          </svg>
+        </span>
+      </div>
+      <div class="name">OpenClass-Box</div>
+      <div class="sub">正在启动</div>
+      <div class="dots"><i></i><i></i><i></i></div>
     </div>
+    <div class="tip" id="tip">正在准备界面与工具清单…</div>
     <script>
       // 本页加载完成即切换到真实应用（同目录 index.html）
       setTimeout(function () {
         try {
-          location.replace("index.html");
+          location.replace('index.html')
         } catch (e) {
           /* 失败由下面的兜底提示接管 */
         }
-      }, 400);
+      }, 900)
 
-      // 兜底：若数秒后仍停留在本页（跳转失败 / 界面无法渲染），
-      // 给出可执行的提示，而不是让人对着黑屏猜。
+      // 兜底：若数秒后仍停留在本页（跳转失败 / 界面无法渲染），给出可执行提示
       setTimeout(function () {
-        var tip = document.getElementById("tip");
-        var spin = document.getElementById("spin");
-        if (!tip) return;
-        if (spin) {
-          spin.style.animationPlayState = "paused";
-          spin.style.borderTopColor = "#ffb020";
-        }
+        var tip = document.getElementById('tip')
+        if (!tip) return
         tip.textContent =
-          "界面未能加载。请确认本机已安装 Microsoft Edge WebView2 运行时，然后按 F5 重试；" +
-          "若问题依旧，请把此界面截图发到交流群 1124622970。";
-        tip.style.opacity = "0.95";
-      }, 7000);
+          '界面未能加载：请确认本机已安装 Microsoft Edge WebView2 运行时，然后按 F5 重试；' +
+          '若问题依旧，请把此界面截图反馈给作者。'
+        tip.style.opacity = '0.85'
+      }, 8000)
     </script>
   </body>
 </html>

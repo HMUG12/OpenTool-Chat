@@ -61,6 +61,7 @@ export interface GpuInfo {
   name?: string
   memoryGB?: number
   driverVersion?: string
+  driverDate?: string
   resolution?: string
 }
 
@@ -83,6 +84,8 @@ export interface HardwareInfo {
   disks: DiskInfo[]
   gpus: GpuInfo[]
   boards: BoardInfo[]
+  /** 后台 WMI 补齐完成后为 true（前端据此决定是否继续轮询） */
+  hardwareReady?: boolean
   os: {
     system: string
     release: string

@@ -3,12 +3,20 @@ import type { ReactNode } from 'react'
 import { Button } from '@fluentui/react-components'
 import UsageBar from '../components/UsageBar'
 import SparkLine from '../components/SparkLine'
+import RingChart from '../components/RingChart'
 import { api } from '../api'
 import { formatBytes, formatDateTime, formatFrequency, formatRate, formatUptime } from '../format'
 import type { HardwareInfo, IpInfo, Metrics, NetworkInfo, PublicIpResult } from '../types'
 
 const DOWN_COLOR = '#0f6cbd'
 const UP_COLOR = '#0e700e'
+
+/** 占用率高时圆环转为橙/红，异常一眼可见 */
+function ringColor(percent: number, base: string): string {
+  if (percent >= 88) return '#c50f1f'
+  if (percent >= 70) return '#9a6700'
+  return base
+}
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -40,6 +48,27 @@ export default function DashboardPage() {
       setIp(ipInfo)
     })()
   }, [])
+
+  // 硬件信息「先快后全」：显卡名 / 主板由后台 WMI 补齐，这里轮询直到就绪
+  useEffect(() => {
+    if (hardware?.hardwareReady) return
+    let tries = 0
+    const timer = window.setInterval(async () => {
+      tries += 1
+      if (tries > 15) {
+        window.clearInterval(timer)
+        return
+      }
+      try {
+        const hw = await api.get_hardware()
+        setHardware(hw)
+        if (hw?.hardwareReady) window.clearInterval(timer)
+      } catch {
+        /* 忽略单次失败 */
+      }
+    }, 1500)
+    return () => window.clearInterval(timer)
+  }, [hardware?.hardwareReady])
 
   // 实时指标：1 秒轮询读取后端采样快照
   useEffect(() => {
@@ -95,37 +124,58 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 核心资源 ── */}
+      {/* ── 核心资源（圆环实时可视化） ── */}
       <div className="oc-grid oc-grid-3" style={{ marginBottom: 12 }}>
         <div className="oc-panel">
           <div className="oc-panel-title">处理器</div>
-          <UsageBar
-            label="使用率"
-            percent={metrics.cpu.percent}
-            value={`${metrics.cpu.percent.toFixed(1)}%`}
-            sub={`${hardware.cpu.threads ?? '-'} 线程 · ${formatFrequency(metrics.cpu.freqCurrent)}`}
-          />
+          <div className="oc-ring-row">
+            <RingChart
+              percent={metrics.cpu.percent}
+              color={ringColor(metrics.cpu.percent, '#0f6cbd')}
+              label="CPU"
+              sub={formatFrequency(metrics.cpu.freqCurrent)}
+            />
+            <div className="oc-ring-meta">
+              <div className="oc-usage-sub">
+                {hardware.cpu.cores ?? '-'} 核 / {hardware.cpu.threads ?? '-'} 线程
+              </div>
+              <div className="oc-usage-sub">实时负载 {metrics.cpu.percent.toFixed(1)}%</div>
+            </div>
+          </div>
         </div>
 
         <div className="oc-panel">
           <div className="oc-panel-title">内存</div>
-          <UsageBar
-            label="已用"
-            percent={metrics.memory.percent}
-            value={`${metrics.memory.percent.toFixed(1)}%`}
-            sub={`${formatBytes(metrics.memory.used)} / ${formatBytes(metrics.memory.total)}`}
-          />
+          <div className="oc-ring-row">
+            <RingChart
+              percent={metrics.memory.percent}
+              color={ringColor(metrics.memory.percent, '#8764b8')}
+              label="已用"
+              sub={formatBytes(metrics.memory.total)}
+            />
+            <div className="oc-ring-meta">
+              <div className="oc-usage-sub">已用 {formatBytes(metrics.memory.used)}</div>
+              <div className="oc-usage-sub">可用 {formatBytes(metrics.memory.available)}</div>
+            </div>
+          </div>
         </div>
 
         <div className="oc-panel">
           <div className="oc-panel-title">存储</div>
           {primaryDisk ? (
-            <UsageBar
-              label={primaryDisk.device}
-              percent={primaryDisk.percent}
-              value={`${primaryDisk.percent.toFixed(1)}%`}
-              sub={`${formatBytes(primaryDisk.used)} / ${formatBytes(primaryDisk.total)} · ${primaryDisk.fstype}`}
-            />
+            <div className="oc-ring-row">
+              <RingChart
+                percent={primaryDisk.percent}
+                color={ringColor(primaryDisk.percent, '#0e700e')}
+                label={primaryDisk.device}
+                sub={formatBytes(primaryDisk.total)}
+              />
+              <div className="oc-ring-meta">
+                <div className="oc-usage-sub">已用 {formatBytes(primaryDisk.used)}</div>
+                <div className="oc-usage-sub">可用 {formatBytes(primaryDisk.free)}</div>
+                <div className="oc-usage-sub">{primaryDisk.fstype}</div>
+              </div>
+            </div>
           ) : (
             <div className="oc-usage-sub">未检测到磁盘分区</div>
           )}

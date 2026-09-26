@@ -81,6 +81,55 @@ class Api:
 
         return check_url(url)
 
+    # ══════════════════════════════════════════════════════
+    # 安全中心（自动检测：浏览器访问 / 剪贴板网址）
+    # ══════════════════════════════════════════════════════
+
+    def security_events(self, limit: int = 120) -> list[dict[str, Any]]:
+        """最近的自动检测记录（新的在前）。"""
+        from .core.security import events
+
+        return events(limit)
+
+    def security_stats(self) -> dict[str, Any]:
+        """检测统计（总数 / 今日 / 今日风险 / 白名单数）。"""
+        from .core.security import stats
+
+        return stats()
+
+    def security_clear(self) -> dict[str, Any]:
+        """清空检测记录。"""
+        from .core.security import clear
+
+        return clear()
+
+    def security_whitelist(self) -> list[str]:
+        from .core.security import whitelist
+
+        return whitelist()
+
+    def security_add_whitelist(self, domain: str) -> dict[str, Any]:
+        from .core.security import add_whitelist
+
+        return add_whitelist(domain)
+
+    def security_remove_whitelist(self, domain: str) -> dict[str, Any]:
+        from .core.security import remove_whitelist
+
+        return remove_whitelist(domain)
+
+    def security_settings(self) -> dict[str, Any]:
+        from .core.security import settings
+
+        return settings()
+
+    def set_security_settings(
+        self, clipboard: bool | None = None, browser: bool | None = None
+    ) -> dict[str, Any]:
+        from .core.security import set_settings
+
+        return set_settings(clipboard, browser)
+
     def url_alerts(self) -> list[dict[str, Any]]:
         """取出剪贴板监听产生的风险网址告警（取出即清空）。"""
         from .core.url_watch import alerts
@@ -278,17 +327,24 @@ class Api:
 
         return list_startup()
 
-    def get_hardware_detail(self) -> dict[str, Any]:
-        """详细硬件信息（CPU/显卡/内存/硬盘/主板/温度），全部本机实测。"""
+    def get_hardware_detail(self, quick: bool = False) -> dict[str, Any]:
+        """详细硬件信息（CPU/显卡/内存/硬盘/主板/温度），全部本机实测。
+
+        quick=True 立即返回秒级快照；完整数据随后台采集就绪（fullReady）。
+        """
         from .core import hardware_detail
 
-        return hardware_detail.collect()
+        return hardware_detail.collect(quick=quick)
 
     def check_self_update(self) -> dict[str, Any]:
         """检测本软件自身是否有新版本（GitHub Releases）。"""
         from .core.updater import check_self_update
 
         return check_self_update()
+
+    def get_data_dir(self) -> str:
+        """配置与运行时数据的实际存放目录（安装到 Program Files 时会回退到用户目录）。"""
+        return str(paths.config_dir())
 
     def get_close_to_tray(self) -> bool:
         """关闭窗口时是否最小化到托盘（默认开启）。"""

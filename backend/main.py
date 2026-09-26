@@ -26,6 +26,48 @@ WINDOW_SIZE = (1180, 760)
 MIN_SIZE = (900, 600)
 ICON = paths.app_root() / "openclass.ico"
 
+# 单实例互斥体（Local\ = 当前用户会话，多用户同时登录互不影响）
+_MUTEX_NAME = r"Local\OpenClass-Box-SingleInstance"
+_mutex_handle: int | None = None
+
+
+def _activate_existing() -> None:
+    """把已在运行的窗口唤到前台（最小化状态先还原）。"""
+    try:
+        import ctypes
+
+        from .system.wincontrol import restore
+
+        restore()
+        hwnd = ctypes.windll.user32.FindWindowW(None, WINDOW_TITLE)
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+    except Exception:
+        pass
+
+
+def ensure_single_instance() -> bool:
+    """确保只有本实例在运行。
+
+    已存在实例时：唤起它的窗口并返回 False（调用方应直接退出）。
+    用 Win32 命名互斥体实现，进程崩溃后由系统自动释放，不会残留锁。
+    """
+    if sys.platform != "win32":
+        return True
+    global _mutex_handle
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        _mutex_handle = kernel32.CreateMutexW(None, False, _MUTEX_NAME)
+        if kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+            _activate_existing()
+            return False
+    except (AttributeError, OSError):
+        return True
+    return True
+
 
 def resolve_url(dev: bool) -> str:
     """决定加载到 WebView 的地址。
@@ -277,6 +319,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+
+    # 单实例：重复启动时唤起已有窗口并直接退出（避免开多个）
+    if not (args.register_openwith or args.unregister_openwith):
+        if not ensure_single_instance():
+            return 0
 
     if args.register_openwith or args.unregister_openwith:
         from .system.shell_integration import set_openwith

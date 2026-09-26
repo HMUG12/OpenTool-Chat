@@ -72,6 +72,13 @@ def _loop() -> None:
     seen: dict[str, int] = {}
     while True:
         try:
+            from .security import record as security_record
+            from .security import settings
+
+            if not settings()["browser"]:
+                time.sleep(_INTERVAL)
+                continue
+
             checked = 0
             for history in _history_files():
                 got = _latest_visit(history)
@@ -87,6 +94,7 @@ def _loop() -> None:
                 checked += 1
                 if url.startswith(("http://", "https://")):
                     result: dict[str, Any] = check_url(url)
+                    security_record(result, "browser")  # 全部记录，供安全中心展示
                     if result["level"] != "safe":
                         push_alert(result)
         except Exception:
