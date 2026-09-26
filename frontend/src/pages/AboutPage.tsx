@@ -67,7 +67,39 @@ export default function AboutPage({ toolCount }: { toolCount: number }) {
             </Button>
           </div>
 
-          <div style={{ marginTop: 26, fontSize: 12, opacity: 0.5, lineHeight: 1.7 }}>
+          {/* ── 赞助支持 ── */}
+          <div className="oc-panel" style={{ marginTop: 20 }}>
+            <div className="oc-panel-title">赞助支持</div>
+            <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <img
+                src="./reward.png"
+                alt="赞助码"
+                style={{
+                  width: 196,
+                  borderRadius: 10,
+                  border: '1px solid var(--oc-border)',
+                  background: '#fff',
+                  padding: 6,
+                }}
+                onError={(event) => {
+                  // 未随包携带赞助码时优雅隐藏，只保留文字说明
+                  ;(event.currentTarget as HTMLImageElement).style.display = 'none'
+                }}
+              />
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 15, fontWeight: 650, marginBottom: 8 }}>
+                  如果软件不错，欢迎赞助
+                </div>
+                <div className="oc-hint">
+                  赞助完全自愿，不影响任何功能，也不提供额外特权。
+                  你的支持会用于持续开发、更多机型的适配测试，
+                  以及后续正式代码签名证书的费用。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 22, fontSize: 12, opacity: 0.5, lineHeight: 1.7 }}>
             交流群（QQ）：1124622970
             <br />
             本项目基于 MIT 协议开源。

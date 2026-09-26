@@ -22,7 +22,35 @@ BUILD = ROOT / "build_build"
 SEP = os.pathsep  # Windows 上为 ';'
 
 
+def _ensure_reward_image() -> None:
+    """赞助码图片：frontend/public/reward.png 缺失时自动认领。
+
+    把图片（任意来源）命名为 *reward*.png / *赞赏*.png 放到项目根、
+    下载目录或桌面，打包时会自动复制成前端静态资源前排使用。
+    """
+    target = ROOT / "frontend" / "public" / "reward.png"
+    if target.is_file():
+        return
+    patterns = ("*reward*.png", "*reward*.jpg", "*赞赏*.png", "*赞赏*.jpg", "mm_reward*")
+    candidates: list[Path] = []
+    for base in (ROOT, Path.home() / "Downloads", Path.home() / "Desktop", Path.home() / "Pictures"):
+        if not base.is_dir():
+            continue
+        for pattern in patterns:
+            candidates.extend(base.glob(pattern))
+    for candidate in candidates:
+        try:
+            if candidate.is_file() and candidate.stat().st_size > 4096:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(candidate, target)
+                print(f"[pack] 已认领赞助码图片：{candidate.name} -> {target}")
+                return
+        except OSError:
+            continue
+
+
 def main() -> int:
+    _ensure_reward_image()
     DIST.mkdir(parents=True, exist_ok=True)
 
     # PyInstaller 输出前会删除已存在的目标目录，而该目录通常有数千个文件，
@@ -64,6 +92,10 @@ def main() -> int:
         "PIL",
         "--icon",
         str(ROOT / "openclass.ico"),
+        # 版本资源：exe 属性里会显示发布者/产品/版权，
+        # 同时明显降低杀毒软件与 SmartScreen 的启发式误报
+        "--version-file",
+        str(ROOT / "version_info.txt"),
         # 注册表与窗口集成
         "--hidden-import",
         "win32api",
@@ -105,6 +137,22 @@ def main() -> int:
         print("[pack] 未找到 runtime/WebView2Runtime，跳过（将依赖系统 WebView2）")
 
     exe = DIST / "OpenClass-Box" / "OpenClass-Box.exe"
+
+    # 打包完成后自动签名（证书已生成时），并把信任证书放进产物目录：
+    # 目标机导入该证书后不再出现「未知发布者」提示（详见 sign.py 说明）
+    try:
+        import sign as signer
+
+        if signer.certificate_exists():
+            signed = signer.sign_file(exe)
+            print(f"[pack] 代码签名：{'成功' if signed else '失败（可运行 python sign.py sign 重试）'}")
+            if signer.export_cer(DIST / "OpenClass-Box" / "OpenClass-Box.cer"):
+                print("[pack] 已附带信任证书 OpenClass-Box.cer")
+        else:
+            print("[pack] 未生成签名证书，跳过签名（python sign.py init 可生成）")
+    except Exception as exc:  # 签名失败不影响产物可用
+        print(f"[pack] 跳过签名：{exc}")
+
     print(f"[pack] 完成：{exe}")
     return 0
 

@@ -1,0 +1,37 @@
+# PyInstaller 版本资源（会被写入 exe 的「属性 → 详细信息」）
+#
+# 作用：
+#   1. 让 exe 有明确的发布者、产品名、版本与版权信息，显得更"正规"；
+#   2. 杀毒 / SmartScreen 的启发式判定对有完整版本信息的程序更宽松，
+#      能显著降低「未知发布者 / 疑似风险」的误报率。
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(0, 1, 3, 0),
+    prodvers=(0, 1, 3, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '080404B0',
+        [
+          StringStruct('CompanyName', 'HMUG12'),
+          StringStruct('FileDescription', 'OpenClass-Box 开源实用工具箱'),
+          StringStruct('FileVersion', '0.1.3.0'),
+          StringStruct('InternalName', 'OpenClass-Box'),
+          StringStruct('LegalCopyright', 'Copyright (C) 2026 HMUG12 · MIT License'),
+          StringStruct('OriginalFilename', 'OpenClass-Box.exe'),
+          StringStruct('ProductName', 'OpenClass-Box'),
+          StringStruct('ProductVersion', '0.1.3 Beta'),
+          StringStruct('Comments', 'https://github.com/HMUG12/OpenClass-Box')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct('Translation', [2052, 1200])])
+  ]
+)
