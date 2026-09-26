@@ -48,6 +48,9 @@ export interface OcApi {
   lan_reset_code(): Promise<string>
   lan_join(server_url?: string, code?: string): Promise<any>
   lan_leave(): Promise<any>
+  lan_config(): Promise<any>
+  lan_set_config(port?: number, proxy?: string, server_url?: string, auto_start?: boolean): Promise<any>
+  apply_role(role: string): Promise<any>
   lan_pick_file(): Promise<any>
   lan_push_file(node_ids: string[], path: string): Promise<any>
   lan_set_node_meta(node_id: string, alias?: string, group?: string): Promise<any>
@@ -186,6 +189,11 @@ const MOCK_API: OcApi = {
   async lan_reset_code() { return '------' },
   async lan_join() { return { ok: false, message: '开发预览模式：无法加入' } },
   async lan_leave() { return { ok: true, message: '开发预览模式' } },
+  async lan_config() {
+    return { role: '', mode: 'single', port: 38900, proxy: '', serverUrl: '', autoStart: true }
+  },
+  async lan_set_config() { return { ok: true, message: '开发预览模式', config: await MOCK_API.lan_config() } },
+  async apply_role() { return { ok: true, message: '开发预览模式' } },
   async lan_pick_file() { return { ok: false, path: '', message: '开发预览模式：无法打开文件选择框' } },
   async lan_push_file() { return { ok: false, message: '开发预览模式：无法下发文件' } },
   async lan_set_node_meta() { return { ok: false, message: '开发预览模式' } },

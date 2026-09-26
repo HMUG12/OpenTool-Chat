@@ -238,6 +238,78 @@ class Api:
         config.set("lan_mode", "single")
         return result
 
+    def lan_config(self) -> dict[str, Any]:
+        """A/B 端身份与网络配置（端口 / 代理 / 服务器地址 / 自启动）。"""
+        return {
+            "role": str(config.get("lan_role", "") or ""),
+            "mode": str(config.get("lan_mode", "single") or "single"),
+            "port": int(config.get("lan_port", 38900) or 38900),
+            "proxy": str(config.get("lan_proxy", "") or ""),
+            "serverUrl": str(config.get("lan_server_url", "") or ""),
+            "autoStart": bool(config.get("lan_auto_start", True)),
+        }
+
+    def lan_set_config(
+        self,
+        port: int | None = None,
+        proxy: str | None = None,
+        server_url: str | None = None,
+        auto_start: bool | None = None,
+    ) -> dict[str, Any]:
+        """更新网络配置。
+
+        代理留空 = 直连（机房局域网推荐）；填写后学生机经由该代理访问
+        A 端 —— 配合端口映射 / 内网穿透即可跨网段使用，无需中心服务器。
+        """
+        if port is not None:
+            try:
+                config.set("lan_port", int(port))
+            except (TypeError, ValueError):
+                return {"ok": False, "message": "端口必须是数字"}
+        if proxy is not None:
+            config.set("lan_proxy", str(proxy).strip())
+        if server_url is not None:
+            config.set("lan_server_url", str(server_url).strip())
+        if auto_start is not None:
+            config.set("lan_auto_start", bool(auto_start))
+
+        from .net.client import refresh_opener
+
+        refresh_opener()
+        return {"ok": True, "message": "网络配置已保存", "config": self.lan_config()}
+
+    def apply_role(self, role: str) -> dict[str, Any]:
+        """按启动角色初始化（安装包快捷方式带 --role=a / --role=b）。
+
+        a    → A 端（服务端）：按自启动开关拉起服务；
+        b    → B 端（本体）：恢复为学生机身份，已配对则自动连；
+        auto → 沿用上次配置，不干预。
+        """
+        role = (role or "auto").strip().lower()
+        if role not in ("a", "b", "auto"):
+            return {"ok": False, "message": f"未知角色：{role}"}
+        if role == "auto":
+            return {"ok": True, "message": "沿用上次配置"}
+
+        config.set("lan_role", role)
+        if role == "a":
+            from .net.server import server
+
+            if bool(config.get("lan_auto_start", True)):
+                result = server.start(int(config.get("lan_port", 38900) or 38900))
+                return {"ok": True, "message": str(result.get("message") or "A 端服务已启动")}
+            config.set("lan_mode", "teacher")
+            return {"ok": True, "message": "已切换为 A 端（服务未自动启动）"}
+
+        config.set("lan_mode", "student")
+        try:
+            from .net.client import client
+
+            client.start()
+        except Exception:
+            pass
+        return {"ok": True, "message": "已切换为 B 端"}
+
     def lan_pick_file(self) -> dict[str, Any]:
         """老师机：弹出文件选择框，返回待下发文件的路径。"""
         if self._window is None:

@@ -33,7 +33,22 @@ _TIMEOUT = 20.0
 _LOOP_INTERVAL = 5.0
 _MAX_BACKOFF = 30.0
 
-# 局域网直连：显式禁用代理
+def refresh_opener() -> None:
+    """按配置重建请求器。
+
+    默认**直连**（显式禁用系统代理，否则挂代理的机器连不上同网段 A 端）；
+    若用户在设置里填了代理（跨网段 / 内网穿透场景），则改走该代理。
+    """
+    global _opener
+    proxy = str(config.get("lan_proxy", "") or "").strip()
+    if proxy:
+        handler = urllib.request.ProxyHandler({"http": proxy, "https": proxy})
+    else:
+        handler = urllib.request.ProxyHandler({})
+    _opener = urllib.request.build_opener(handler)
+
+
+# 局域网直连：显式禁用代理（配置了代理时由 refresh_opener 覆盖）
 _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 

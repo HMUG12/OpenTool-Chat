@@ -69,6 +69,9 @@ export default function LanPage() {
   const [inbox, setInbox] = useState<any[]>([])
   const [collectPath, setCollectPath] = useState('')
   const [receivePath, setReceivePath] = useState('')
+  const [portInput, setPortInput] = useState('38900')
+  const [proxyInput, setProxyInput] = useState('')
+  const [groupFilter, setGroupFilter] = useState('')
 
   const notify = (text: string) => {
     setMsg(text)
@@ -91,6 +94,17 @@ export default function LanPage() {
     await load(true)
   }
 
+  const saveNetwork = async () => {
+    const port = Number(portInput.trim() || '38900')
+    if (!Number.isFinite(port) || port < 1024 || port > 65535) {
+      notify('端口需在 1024–65535 之间')
+      return
+    }
+    const result = await api.lan_set_config(port, proxyInput.trim())
+    notify(result?.message ?? '')
+    await load(true)
+  }
+
   const editMeta = async (node: any) => {
     const alias = window.prompt('设备备注名（留空则用原始名称）', node.alias || '')
     if (alias === null) return
@@ -104,18 +118,21 @@ export default function LanPage() {
   const load = async (silent = false) => {
     if (!silent) setBusy(true)
     try {
-      const [s, n, e, box, recv] = await Promise.all([
+      const [s, n, e, box, recv, cfg] = await Promise.all([
         api.lan_status(),
         api.lan_nodes(),
         api.lan_events(60),
         api.lan_inbox(),
         api.lan_receive_dir(),
+        api.lan_config(),
       ])
       setStatus(s)
       setNodes(n ?? [])
       setEvents(e ?? [])
       setInbox(box ?? [])
       setReceivePath(recv ?? '')
+      setPortInput(String(cfg?.port ?? 38900))
+      setProxyInput(cfg?.proxy ?? '')
     } catch {
       /* 首次读取失败保持空态 */
     } finally {
@@ -215,12 +232,12 @@ export default function LanPage() {
         <div>
           <div className="oc-page-title">机房管理</div>
           <div className="oc-page-desc">
-            局域网内一台老师机管理所有学生机 · 无需服务器，点对点直连
+            A 端＝服务端（管理端）· B 端＝本体（被管理端）· 局域网直连，也可经代理跨网段
           </div>
         </div>
         <div className="oc-device">
           <div className="oc-device-model">
-            {mode === 'teacher' ? '老师机模式' : mode === 'student' ? '学生机模式' : '单机模式'}
+            {mode === 'teacher' ? 'A 端 · 服务端' : mode === 'student' ? 'B 端 · 本体' : '单机模式'}
           </div>
           <div className="oc-device-sub">
             {mode === 'teacher'
@@ -234,7 +251,7 @@ export default function LanPage() {
 
       {/* ── 老师机面板 ── */}
       <div className="oc-panel">
-        <div className="oc-panel-title">老师机（管理端）</div>
+        <div className="oc-panel-title">A 端 · 服务端（管理端）</div>
         {server?.running ? (
           <>
             <div className="oc-stats" style={{ marginTop: 8 }}>
@@ -259,7 +276,21 @@ export default function LanPage() {
                 <div className="oc-stat-label">离线设备</div>
               </div>
             </div>
-            <div className="oc-actions" style={{ marginTop: 12 }}>
+            <div className="oc-searchbar" style={{ marginTop: 12, flexWrap: 'wrap' }}>
+              <span className="oc-list-sub">服务端口</span>
+              <Input
+                value={portInput}
+                onChange={(_e, data) => setPortInput(data.value)}
+                style={{ width: 108 }}
+              />
+              <Button appearance="secondary" onClick={saveNetwork}>
+                保存配置
+              </Button>
+              <span className="oc-list-sub">
+                改端口后需重启服务；跨网段可用端口映射 / 内网穿透，B 端填映射后的地址
+              </span>
+            </div>
+            <div className="oc-actions" style={{ marginTop: 10 }}>
               <Button appearance="secondary" onClick={resetCode}>
                 重置配对码
               </Button>
@@ -274,9 +305,23 @@ export default function LanPage() {
               启动后本机成为老师机：学生机会自动发现你（或手动填写本机 IP），
               输入配对码即可加入管理。
             </div>
-            <Button appearance="primary" style={{ marginTop: 10 }} onClick={startServer}>
-              启动管理服务
-            </Button>
+            <div className="oc-searchbar" style={{ marginTop: 10, flexWrap: 'wrap' }}>
+              <span className="oc-list-sub">服务端口</span>
+              <Input
+                value={portInput}
+                onChange={(_e, data) => setPortInput(data.value)}
+                style={{ width: 108 }}
+              />
+              <Button
+                appearance="primary"
+                onClick={async () => {
+                  await api.lan_set_config(Number(portInput.trim() || '38900'))
+                  await startServer()
+                }}
+              >
+                启动管理服务
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -284,7 +329,7 @@ export default function LanPage() {
       {/* ── 学生机面板 ── */}
       {mode !== 'teacher' && (
         <div className="oc-panel" style={{ marginTop: 12 }}>
-          <div className="oc-panel-title">学生机（加入老师机）</div>
+          <div className="oc-panel-title">B 端 · 本体（加入服务端）</div>
           {client?.state === 'connected' ? (
             <>
               <div className="oc-list-sub" style={{ marginTop: 6 }}>
@@ -304,8 +349,19 @@ export default function LanPage() {
           ) : (
             <>
               <div className="oc-searchbar" style={{ marginTop: 8, marginBottom: 8 }}>
+                <Input
+                  value={proxyInput}
+                  onChange={(_e, data) => setProxyInput(data.value)}
+                  placeholder="代理（可选，跨网段时填 http://IP:端口）"
+                  style={{ flex: 1 }}
+                />
+                <Button appearance="secondary" onClick={saveNetwork}>
+                  保存代理
+                </Button>
+              </div>
+              <div className="oc-searchbar" style={{ marginBottom: 8 }}>
                 <Button appearance="secondary" onClick={doScan} disabled={scanning}>
-                  {scanning ? '搜索中…' : '搜索老师机'}
+                  {scanning ? '搜索中…' : '搜索服务端（A 端）'}
                 </Button>
                 {scanResult.length > 0 && (
                   <span className="oc-list-sub">发现 {scanResult.length} 台，点击即填入</span>
@@ -388,6 +444,43 @@ export default function LanPage() {
             </Button>
           </div>
 
+          {(server?.groups ?? []).length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              <Button
+                size="small"
+                appearance={groupFilter === '' ? 'primary' : 'subtle'}
+                onClick={() => setGroupFilter('')}
+              >
+                全部分组
+              </Button>
+              {(server?.groups ?? []).map((group: string) => (
+                <Button
+                  key={group}
+                  size="small"
+                  appearance={groupFilter === group ? 'primary' : 'subtle'}
+                  onClick={() => setGroupFilter(group)}
+                >
+                  {group}
+                </Button>
+              ))}
+              {groupFilter && (
+                <Button
+                  size="small"
+                  appearance="secondary"
+                  onClick={() =>
+                    setSelected(
+                      nodes
+                        .filter((item) => (item.group || '') === groupFilter)
+                        .map((item) => item.id)
+                    )
+                  }
+                >
+                  选中本组
+                </Button>
+              )}
+            </div>
+          )}
+
           {nodes.length === 0 ? (
             <div className="oc-hint" style={{ marginTop: 6 }}>
               还没有学生机加入。请让学生机打开本程序 →「机房管理」→ 填入配对码{' '}
@@ -395,7 +488,9 @@ export default function LanPage() {
             </div>
           ) : (
             <div className="oc-toolgrid" style={{ marginTop: 10 }}>
-              {nodes.map((node) => (
+              {nodes
+                .filter((item) => !groupFilter || (item.group || '') === groupFilter)
+                .map((node) => (
                 <div
                   className="oc-toolcard"
                   key={node.id}

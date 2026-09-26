@@ -199,6 +199,7 @@ class AppHost:
         debug: bool = False,
         hidden: bool = False,
         files: list[str] | None = None,
+        role: str = "auto",
     ) -> None:
         paths.ensure_runtime_dirs()
 
@@ -283,6 +284,13 @@ class AppHost:
 
         self.tray.start()
 
+        # 启动角色：A 端（服务端）自动拉起管理服务；B 端恢复客户端身份
+        if role and role != "auto":
+            try:
+                self.api.apply_role(role)
+            except Exception:
+                pass
+
         if hidden or files:
             # 注意：webview.start() 之前窗口尚未就绪，此时直接 hide() 会抛
             # "Main window failed to start"。改为窗口显示完成后再隐藏。
@@ -311,6 +319,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dev", action="store_true", help="连接本地 vite 开发服务器")
     parser.add_argument("--debug", action="store_true", help="开启 WebView 调试")
     parser.add_argument("--hidden", action="store_true", help="启动后仅驻留系统托盘")
+    parser.add_argument(
+        "--role",
+        choices=("auto", "a", "b"),
+        default="auto",
+        help="启动角色：a=A 端（服务端，自动开管理服务）/ b=B 端（本体，恢复学生机身份）/ auto=沿用上次配置",
+    )
     parser.add_argument("files", nargs="*", help="要打开的文件路径（右键打开方式）")
     parser.add_argument("--register-openwith", action="store_true", help="注册右键「打开方式」入口后退出")
     parser.add_argument("--unregister-openwith", action="store_true", help="注销右键「打开方式」入口后退出")
@@ -339,6 +353,7 @@ def main(argv: list[str] | None = None) -> int:
             debug=args.debug,
             hidden=args.hidden,
             files=args.files or None,
+            role=args.role,
         )
     except KeyboardInterrupt:
         return 130

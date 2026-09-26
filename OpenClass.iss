@@ -38,8 +38,12 @@ Source: "dist_build/OpenClass-Box/OpenClass-Box.cer"; DestDir: "{app}"; Flags: i
 Source: "installer\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
 [Icons]
-Name: "{group}\OpenClass-Box"; Filename: "{app}\OpenClass-Box.exe"
-Name: "{autodesktop}\OpenClass-Box"; Filename: "{app}\OpenClass-Box.exe"; Tasks: desktopicon
+; A 端＝服务端（管理端，启动即拉起管理服务）；B 端＝本体（被管理端）
+Name: "{group}\OpenClass-Box（A 端·服务端）"; Filename: "{app}\OpenClass-Box.exe"; Parameters: "--role=a"
+Name: "{group}\OpenClass-Box（B 端·本体）"; Filename: "{app}\OpenClass-Box.exe"; Parameters: "--role=b"
+Name: "{group}\OpenClass-Box（默认）"; Filename: "{app}\OpenClass-Box.exe"
+Name: "{autodesktop}\OpenClass-Box（A 端）"; Filename: "{app}\OpenClass-Box.exe"; Parameters: "--role=a"; Tasks: desktopicon
+Name: "{autodesktop}\OpenClass-Box（B 端）"; Filename: "{app}\OpenClass-Box.exe"; Parameters: "--role=b"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "额外任务:"
