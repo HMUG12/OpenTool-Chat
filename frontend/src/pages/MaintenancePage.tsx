@@ -289,7 +289,137 @@ function RepairPanel() {
   )
 }
 
-type Tab = 'checkup' | 'repair' | 'diagnostics'
+/** 便携急救盘：U 盘随插随用 */
+function PortablePanel() {
+  const [status, setStatus] = useState<any>(null)
+  const [drives, setDrives] = useState<any[]>([])
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const load = async () => {
+    try {
+      const [s, d] = await Promise.all([api.portable_status(), api.list_removable_drives()])
+      setStatus(s)
+      setDrives(d ?? [])
+    } catch {
+      setStatus(null)
+    }
+  }
+
+  useEffect(() => {
+    void load()
+  }, [])
+
+  const make = async (drive: string) => {
+    const ok = window.confirm(
+      `确定把精简版程序复制到 ${drive} 吗？\n\n` +
+        `· 会在 U 盘上新建 OpenClass-Box 目录\n` +
+        `· 不会格式化整盘，也不影响盘上其他文件\n` +
+        `· 不含 OpenOffice / VLC / mpv 等大体积工具`
+    )
+    if (!ok) return
+    setBusy(true)
+    setMsg('正在制作，请稍候（需要复制数百 MB）…')
+    try {
+      const result = await api.make_rescue_usb(drive)
+      setMsg(result?.message ?? '')
+    } catch (error) {
+      setMsg(`制作失败：${error}`)
+    } finally {
+      setBusy(false)
+      await load()
+    }
+  }
+
+  return (
+    <>
+      <div className="oc-panel">
+        <div className="oc-panel-title">便携运行状态</div>
+        <div className="oc-info-row">
+          <span>运行位置</span>
+          <span>
+            {status?.portable ? '可移动介质（U 盘）· 配置随身携带' : '本机磁盘'}
+          </span>
+        </div>
+        <div className="oc-info-row">
+          <span>数据目录</span>
+          <span style={{ fontFamily: 'var(--oc-mono)' }}>{status?.dataDir || '—'}</span>
+        </div>
+        <div className="oc-hint" style={{ marginTop: 10 }}>
+          程序放在 U 盘上运行时，配置、安全记录、收发文件都写在 U 盘的 data 目录，
+          换一台电脑插上就是同一套设置，拔走不在对方机器留痕。
+        </div>
+      </div>
+
+      <div className="oc-panel" style={{ marginTop: 12 }}>
+        <div className="oc-panel-title">
+          制作便携急救盘
+          <Button
+            size="small"
+            appearance="secondary"
+            style={{ marginLeft: 10 }}
+            onClick={() => void load()}
+            disabled={busy}
+          >
+            刷新磁盘列表
+          </Button>
+        </div>
+        <div className="oc-hint" style={{ marginBottom: 10 }}>
+          把精简版程序复制到 U 盘：系统崩了、或被装乱了也能插上就用 ——
+          一键体检、修复、磁盘清理、诊断包、硬件信息。
+        </div>
+        {drives.length === 0 ? (
+          <div className="oc-hint">
+            未检测到可移动磁盘（U 盘 / 移动硬盘）。插入后点「刷新磁盘列表」。
+          </div>
+        ) : (
+          <div className="oc-list">
+            {drives.map((item) => (
+              <div className="oc-list-row" key={item.drive}>
+                <div className="oc-list-main">
+                  <div className="oc-list-title">{item.drive}</div>
+                  <div className="oc-list-sub">
+                    剩余 {formatSize(item.free)} / 共 {formatSize(item.total)}
+                  </div>
+                </div>
+                <Button
+                  size="small"
+                  appearance="primary"
+                  disabled={busy}
+                  onClick={() => void make(item.drive)}
+                >
+                  {busy ? '制作中…' : '制作急救盘'}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        {msg && (
+          <div className="oc-list-sub" style={{ marginTop: 10 }}>
+            {msg}
+          </div>
+        )}
+      </div>
+
+      <div className="oc-panel" style={{ marginTop: 12 }}>
+        <div className="oc-panel-title">急救盘里的清单</div>
+        <div className="oc-hint">
+          1. 插上 U 盘 → 双击根目录「启动OpenClass-Box.bat」（需要时右键以管理员身份运行）
+          <br />
+          2. 维护 → 一键体检 / 修复（DNS、临时文件、音频服务、网络重置）/ 磁盘清理
+          <br />
+          3. 维护 → 诊断 → 生成诊断包，交给报修人员
+          <br />
+          4. 硬件信息 → 温度 / 显存 / 硬盘健康等实测数据
+          <br />
+          5. 机房管理 → 把出问题的机器临时设为 B 端，接入老师的 A 端统一处理
+        </div>
+      </div>
+    </>
+  )
+}
+
+type Tab = 'checkup' | 'repair' | 'diagnostics' | 'portable'
 
 export default function MaintenancePage() {
   const [tab, setTab] = useState<Tab>('checkup')
@@ -321,12 +451,19 @@ export default function MaintenancePage() {
           >
             诊断
           </Button>
+          <Button
+            appearance={tab === 'portable' ? 'primary' : 'secondary'}
+            onClick={() => setTab('portable')}
+          >
+            便携急救盘
+          </Button>
         </div>
       </div>
 
       {tab === 'checkup' && <HealthPage />}
       {tab === 'repair' && <RepairPanel />}
       {tab === 'diagnostics' && <DiagnosticsPage />}
+      {tab === 'portable' && <PortablePanel />}
     </div>
   )
 }

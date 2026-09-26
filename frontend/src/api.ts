@@ -60,6 +60,9 @@ export interface OcApi {
   lan_open_inbox(): Promise<boolean>
   lan_receive_dir(): Promise<string>
   lan_open_receive_dir(): Promise<boolean>
+  portable_status(): Promise<any>
+  list_removable_drives(): Promise<any[]>
+  make_rescue_usb(drive: string): Promise<any>
   search_music(keyword?: string): Promise<any[]>
   music_url(path: string): Promise<string>
   search_music_online(keyword: string, platform?: string): Promise<any[]>
@@ -207,6 +210,9 @@ const MOCK_API: OcApi = {
   async lan_open_inbox() { return false },
   async lan_receive_dir() { return '-' },
   async lan_open_receive_dir() { return false },
+  async portable_status() { return { portable: false, dataDir: '-', appRoot: '-', removable: [] } },
+  async list_removable_drives() { return [] },
+  async make_rescue_usb() { return { ok: false, message: '开发预览模式：无法制作急救盘' } },
   async search_music() { return [] },
   async music_url(path) { return path },
   async search_music_online() { return [] },

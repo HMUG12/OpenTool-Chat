@@ -49,17 +49,33 @@ def _is_writable(path: Path) -> bool:
 
 
 def data_root() -> Path:
-    """可写数据目录（配置 / 壁纸 / 安全事件都放这里）。
+    """可写数据目录（配置 / 壁纸 / 安全事件 / 收发文件都放这里）。
 
-    优先程序目录下的 data/（便携模式）；当程序被安装到 C:\\Program Files
-    这类受保护位置时该目录不可写，此时回退 %LOCALAPPDATA%\\OpenClass-Box。
-    这是「设置无法保存」问题的根因修复。
+    优先级：
+      1. **可移动介质（U 盘）上的 data/** —— 便携急救模式：配置跟着 U 盘走，
+         插到任何一台电脑都是同一套设置，拔走后不在对方机器留痕；
+      2. 程序目录下的 data/ —— 绿色版便携；
+      3. %LOCALAPPDATA%\\OpenClass-Box —— 安装到 Program Files 这类
+         受保护位置时的回退（「设置无法保存」的根因修复）。
     """
     global _data_root_cache
     if _data_root_cache is not None:
         return _data_root_cache
 
     portable = app_root() / "data"
+
+    # ① U 盘等可移动介质优先：让数据随介质移动
+    try:
+        from .portable import is_portable_media
+
+        on_removable = is_portable_media()
+    except Exception:
+        on_removable = False
+
+    if on_removable and _is_writable(portable):
+        _data_root_cache = portable
+        return portable
+
     if _is_writable(portable):
         _data_root_cache = portable
         return portable

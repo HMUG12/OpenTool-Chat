@@ -415,6 +415,28 @@ class Api:
         ok, _ = open_in_explorer(receive_dir())
         return ok
 
+    # ══════════════════════════════════════════════════════
+    # 便携与急救盘（U 盘随插随用）
+    # ══════════════════════════════════════════════════════
+
+    def portable_status(self) -> dict[str, Any]:
+        """便携状态：是否在 U 盘上运行、数据目录位置、可用 U 盘列表。"""
+        from .core.portable import portable_status
+
+        return portable_status()
+
+    def list_removable_drives(self) -> list[dict[str, Any]]:
+        """列出当前接入的可移动磁盘。"""
+        from .core.portable import list_removable_drives
+
+        return list_removable_drives()
+
+    def make_rescue_usb(self, drive: str) -> dict[str, Any]:
+        """把精简后的程序复制到 U 盘，制作便携急救盘。"""
+        from .core.portable import make_rescue_usb
+
+        return make_rescue_usb(drive)
+
     def url_alerts(self) -> list[dict[str, Any]]:
         """取出剪贴板监听产生的风险网址告警（取出即清空）。"""
         from .core.url_watch import alerts
