@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -52,6 +53,8 @@ _APPS: dict[str, dict] = {
     "openoffice": {
         "app_paths": "soffice.exe",
         "app_paths_hint": "openoffice",
+        # 随包携带便携版；路径含中文时由 ensure_openoffice_portable() 迁移到英文目录
+        "openoffice_portable": True,
         "reg_keys": [],
         # OpenOffice 4.1.x 无法在非 ASCII（中文）路径下运行，会报
         # "central configuration" 错误。因此除 tools/ 便携版外，额外支持
@@ -170,6 +173,93 @@ def _from_abs_paths(paths: list[str]) -> Optional[Path]:
     return None
 
 
+def _is_ascii_path(path: Path) -> bool:
+    """路径是否全为 ASCII。
+
+    OpenOffice 4.1.x 在含中文等非 ASCII 字符的路径下必定启动失败
+    （central configuration 错误），因此必须先做这个判断。
+    """
+    try:
+        str(path).encode("ascii")
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+def _openoffice_workdir(create: bool = False) -> Optional[Path]:
+    """可承载 OpenOffice 的英文可写目录（优先 C:\\ProgramData）。
+
+    只在需要（create=True）时创建与写测试，避免扫描阶段产生磁盘动作。
+    """
+    candidates = [
+        Path(os.environ.get("ProgramData", r"C:\ProgramData"))
+        / "OpenClass-Box"
+        / "openoffice",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "OpenClass-Box" / "openoffice",
+    ]
+    for path in candidates:
+        if not _is_ascii_path(path):
+            continue
+        if path.is_dir() and (path / "program" / "soffice.exe").is_file():
+            return path
+        if not create:
+            continue
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+            probe = path / ".oc_write_test"
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink()
+            return path
+        except OSError:
+            continue
+    return None
+
+
+def _find_openoffice_portable() -> Optional[Path]:
+    """查找「能直接运行」的 OpenOffice 便携版（纯查找，不做迁移）。"""
+    portable = app_root() / "tools" / "openoffice" / "program" / "soffice.exe"
+    if portable.is_file() and _is_ascii_path(portable):
+        return portable
+
+    migrated_dir = _openoffice_workdir(create=False)
+    if migrated_dir is not None:
+        migrated = migrated_dir / "program" / "soffice.exe"
+        if migrated.is_file():
+            return migrated
+    return None
+
+
+def ensure_openoffice_portable() -> tuple[Optional[Path], str]:
+    """确保有一个可运行的 OpenOffice（必要时把便携版迁移到英文目录）。
+
+    返回 (soffice.exe 路径, 说明)。仅在用户点击启动时调用，
+    因为迁移需要复制数百 MB，不能放在启动扫描里。
+    """
+    found = _find_openoffice_portable()
+    if found is not None:
+        return found, ""
+
+    portable_root = app_root() / "tools" / "openoffice"
+    portable_exe = portable_root / "program" / "soffice.exe"
+    if not portable_exe.is_file():
+        return None, "未随包携带 OpenOffice 便携版"
+
+    # 随包版本存在但路径含中文 → 迁移到英文目录
+    workdir = _openoffice_workdir(create=True)
+    if workdir is None:
+        return None, "程序目录含中文，且系统盘没有可写的英文目录，无法运行 OpenOffice"
+
+    try:
+        shutil.copytree(portable_root, workdir, dirs_exist_ok=True)
+    except OSError as exc:
+        return None, f"迁移 OpenOffice 失败：{exc}"
+
+    target = workdir / "program" / "soffice.exe"
+    if target.is_file():
+        return target, ""
+    return None, "迁移 OpenOffice 后仍找不到 soffice.exe"
+
+
 def _from_portable(subdir: str, names: tuple[str, ...]) -> Optional[Path]:
     root = app_root()  # 全局路径真相：开发态为项目根，打包态为 exe 目录
     folder = root / "tools" / subdir
@@ -193,6 +283,7 @@ def find_app(name: str) -> Optional[Path]:
         lambda: _from_app_paths(spec.get("app_paths", ""), spec.get("app_paths_hint", "")),
         lambda: _from_reg_keys(spec.get("reg_keys", [])),
         lambda: _from_program_dirs(spec.get("program_dirs", [])),
+        lambda: (_find_openoffice_portable() if spec.get("openoffice_portable") else None),
         lambda: _from_portable(*spec.get("portable", ("", ()))),
     ):
         path = finder()

@@ -117,10 +117,24 @@ export default function DashboardPage() {
   return (
     <div className="oc-page">
       <div className="oc-page-header">
-        <div className="oc-page-title">系统状态</div>
-        <div className="oc-page-desc">
-          {hardware.os.system} {hardware.os.release}
-          {hardware.os.build ? ` · 内部版本 ${hardware.os.build}` : ''} · 已运行 {formatUptime(uptime)}
+        <div>
+          <div className="oc-page-title">系统状态</div>
+          <div className="oc-page-desc">
+            {hardware.os.system} {hardware.os.release}
+            {hardware.os.build ? ` · 内部版本 ${hardware.os.build}` : ''} · 已运行 {formatUptime(uptime)}
+          </div>
+        </div>
+        {/* 右上角：自动识别当前设备型号与登录用户，多机环境一眼分辨 */}
+        <div className="oc-device">
+          <div className="oc-device-model">
+            {[hardware.device?.manufacturer, hardware.device?.model]
+              .filter(Boolean)
+              .join(' ') || '设备型号未知'}
+          </div>
+          <div className="oc-device-sub">
+            {hardware.device?.hostname || hardware.os.hostname}
+            {hardware.device?.user ? ` · ${hardware.device.user}` : ''}
+          </div>
         </div>
       </div>
 

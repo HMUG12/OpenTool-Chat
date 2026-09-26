@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 import re
 import socket
@@ -91,6 +92,40 @@ def cpu_name() -> str:
         except OSError:
             pass
     return platform.processor() or platform.machine()
+
+
+def device_info() -> dict[str, str]:
+    """设备与登录用户信息（注册表读取，秒级、无需 WMI）。
+
+    用于「系统状态」右上角显示当前设备型号 / 用户名 / 主机名，
+    便于在一体机、教室机等多机环境下快速辨认当前这台机器。
+    """
+    info: dict[str, str] = {
+        "user": os.environ.get("USERNAME", "") or os.environ.get("USER", ""),
+        "hostname": platform.node(),
+        "manufacturer": "",
+        "model": "",
+        "family": "",
+    }
+    if platform.system() == "Windows":
+        try:
+            import winreg
+
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\BIOS"
+            ) as key:
+                for value_name, field in (
+                    ("SystemManufacturer", "manufacturer"),
+                    ("SystemProductName", "model"),
+                    ("SystemFamily", "family"),
+                ):
+                    try:
+                        info[field] = str(winreg.QueryValueEx(key, value_name)[0]).strip()
+                    except OSError:
+                        continue
+        except (OSError, ImportError):
+            pass
+    return info
 
 
 def _query_wmi_aux() -> dict[str, Any]:
@@ -440,6 +475,7 @@ class SystemMonitor:
                 "hostname": platform.node(),
             },
             "bootTime": psutil.boot_time(),
+            "device": device_info(),
             "hardwareReady": False,
         }
 

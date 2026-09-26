@@ -283,7 +283,44 @@ body {
 /* ── 页面头部 ───────────────────────────────────────── */
 
 .oc-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 16px;
+}
+
+/* 页面右上角的设备识别信息（型号 / 主机名 / 用户名） */
+.oc-device {
+  flex-shrink: 0;
+  text-align: right;
+  padding-top: 3px;
+}
+
+.oc-device-model {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.oc-device-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.55;
+  font-family: var(--oc-mono);
+}
+
+/* 右下角版本标识 */
+.oc-version-badge {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  z-index: 3;
+  font-size: 11px;
+  font-family: var(--oc-mono);
+  letter-spacing: 0.04em;
+  opacity: 0.38;
+  pointer-events: none;
 }
 
 .oc-page-title {

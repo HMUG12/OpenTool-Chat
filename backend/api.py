@@ -365,12 +365,22 @@ class Api:
             from .core.app_locator import find_app
 
             exe = find_app(spec.app)
+            if exe is None and spec.app == "openoffice":
+                # 随包便携版在中文路径下无法运行：点击启动时按需迁移到英文目录
+                from .core.app_locator import ensure_openoffice_portable
+
+                exe, note = ensure_openoffice_portable()
+                if exe is None and note:
+                    spec.available = False
+                    spec.reason = note
             if exe:
                 entry = exe
                 spec.available = True
+                spec.reason = None
             else:
                 spec.available = False
-                spec.reason = f"未检测到 {spec.app}，请安装后重试或在设置中指定路径"
+                if not spec.reason:
+                    spec.reason = f"未检测到 {spec.app}，请安装后重试或在设置中指定路径"
 
         if not spec.available:
             return {"ok": False, "message": spec.reason or "工具当前不可用"}

@@ -240,6 +240,9 @@ export default function App() {
           ) : (
             renderPage()
           )}
+
+          {/* 右下角版本标识 */}
+          <div className="oc-version-badge">v{version || '0.1.3 Beta'}</div>
         </div>
       </div>
     </FluentProvider>

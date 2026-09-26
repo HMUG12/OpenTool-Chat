@@ -250,40 +250,102 @@ def _find_mpv() -> Path | None:
     return Path(found) if found else None
 
 
-def _find_workerw() -> int:
-    """定位桌面壁纸层窗口（WorkerW），供 mpv 嵌入渲染。"""
+def _top_level_windows() -> list[int]:
+    """枚举所有顶层窗口句柄。"""
     try:
         user32 = ctypes.windll.user32
     except (AttributeError, OSError):
-        return 0
-
-    progman = user32.FindWindowW("Progman", None)
-    if not progman:
-        return 0
-
-    # 0x052C：让 Progman 分裂出 WorkerW 的内部消息
-    result = ctypes.c_ulong()
-    user32.SendMessageTimeoutW(progman, 0x052C, 0, 0, 0, 1000, ctypes.byref(result))
-
-    defview = user32.FindWindowExW(progman, 0, "SHELLDLL_DefView", None)
-    if defview:
-        worker = user32.FindWindowExW(0, defview, "WorkerW", None)
-        if worker:
-            return int(worker)
+        return []
 
     found: list[int] = []
 
     @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
     def _enum(hwnd, _lparam):  # type: ignore[no-untyped-def]
-        if user32.FindWindowExW(hwnd, 0, "SHELLDLL_DefView", None):
-            worker = user32.FindWindowExW(0, hwnd, "WorkerW", None)
-            if worker:
-                found.append(int(worker))
-                return False
+        found.append(int(hwnd))
         return True
 
     user32.EnumWindows(_enum, 0)
-    return found[0] if found else 0
+    return found
+
+
+def _class_name(hwnd: int) -> str:
+    try:
+        buffer = ctypes.create_unicode_buffer(64)
+        ctypes.windll.user32.GetClassNameW(hwnd, buffer, 64)
+        return buffer.value
+    except (AttributeError, OSError):
+        return ""
+
+
+def _find_wallpaper_host() -> tuple[int, str]:
+    """定位能承载视频壁纸的桌面窗口。
+
+    不同 Windows 版本的桌面结构差异很大（Win11 22H2 之后尤其明显），
+    单一方法很容易找不到 WorkerW。这里做四级兜底：
+      1. 触发 Progman 分裂出 WorkerW，取 SHELLDLL_DefView 的兄弟 WorkerW；
+      2. 枚举顶层窗口，取承载 SHELLDLL_DefView 的窗口（或其 WorkerW 子窗口）；
+      3. 直接匹配顶层 WorkerW 类窗口；
+      4. 兜底使用 Progman（桌面容器窗口）。
+
+    返回 (窗口句柄, 来源说明)；全部失败返回 (0, "")。
+    """
+    try:
+        user32 = ctypes.windll.user32
+    except (AttributeError, OSError):
+        return 0, ""
+
+    progman = 0
+    try:
+        progman = int(user32.FindWindowW("Progman", None) or 0)
+    except (AttributeError, OSError):
+        progman = 0
+
+    if progman:
+        # 0x052C：让 Progman 分裂出 WorkerW 的内部消息。
+        # 不同系统版本对参数敏感，逐个尝试（0xD/0x1 在 Win11 上是必需的）。
+        for wparam, lparam in ((0, 0), (0xD, 0x1), (0x0D, 0x01)):
+            try:
+                result = ctypes.c_ulong()
+                user32.SendMessageTimeoutW(
+                    progman, 0x052C, wparam, lparam, 0, 1000, ctypes.byref(result)
+                )
+            except (AttributeError, OSError):
+                continue
+
+    # ① Progman 下直接挂着 SHELLDLL_DefView（多数 Win10 桌面）
+    if progman:
+        try:
+            defview = int(user32.FindWindowExW(progman, 0, "SHELLDLL_DefView", None) or 0)
+        except (AttributeError, OSError):
+            defview = 0
+        if defview:
+            worker = int(user32.FindWindowExW(0, defview, "WorkerW", None) or 0)
+            if worker:
+                return worker, "WorkerW"
+
+    # ② 顶层窗口里找 SHELLDLL_DefView 宿主
+    for hwnd in _top_level_windows():
+        try:
+            defview = int(user32.FindWindowExW(hwnd, 0, "SHELLDLL_DefView", None) or 0)
+        except (AttributeError, OSError):
+            continue
+        if not defview:
+            continue
+        worker = int(user32.FindWindowExW(0, hwnd, "WorkerW", None) or 0)
+        if worker:
+            return worker, "WorkerW"
+        return hwnd, "桌面容器窗口"
+
+    # ③ 直接匹配顶层 WorkerW（Win11 常见）
+    for hwnd in _top_level_windows():
+        if _class_name(hwnd) == "WorkerW":
+            return hwnd, "WorkerW（直接匹配）"
+
+    # ④ 兜底：Progman 本身也能承载渲染
+    if progman:
+        return progman, "Progman"
+
+    return 0, ""
 
 
 def dynamic_status() -> dict[str, Any]:
@@ -330,9 +392,12 @@ def set_dynamic(path: str, muted: bool = True) -> dict[str, Any]:
             "message": "未找到 mpv 播放器：把 mpv.exe 放到 tools/mpv/ 后重试（动态壁纸用它渲染）",
         }
 
-    worker = _find_workerw()
+    worker, host_kind = _find_wallpaper_host()
     if not worker:
-        return {"ok": False, "message": "未能定位桌面壁纸层（WorkerW），当前系统可能不支持"}
+        return {
+            "ok": False,
+            "message": "未能定位桌面承载窗口（WorkerW / Progman 均不可用），请把系统版本反馈给作者以便适配",
+        }
 
     stop_dynamic()
 
@@ -364,7 +429,11 @@ def set_dynamic(path: str, muted: bool = True) -> dict[str, Any]:
         _dynamic_proc = proc
         _dynamic_path = str(target)
 
-    return {"ok": True, "message": "动态壁纸已启动", "path": str(target)}
+    return {
+        "ok": True,
+        "message": f"动态壁纸已启动（承载窗口：{host_kind}）",
+        "path": str(target),
+    }
 
 
 def random_wallpaper(directory: str = "") -> dict[str, Any]:

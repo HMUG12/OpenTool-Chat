@@ -86,6 +86,14 @@ export interface HardwareInfo {
   boards: BoardInfo[]
   /** 后台 WMI 补齐完成后为 true（前端据此决定是否继续轮询） */
   hardwareReady?: boolean
+  /** 设备与登录用户（用于右上角识别当前这台机器） */
+  device?: {
+    user?: string
+    hostname?: string
+    manufacturer?: string
+    model?: string
+    family?: string
+  }
   os: {
     system: string
     release: string
