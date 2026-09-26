@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Button, Input, Spinner } from '@fluentui/react-components'
 import { api } from '../api'
+import HealthPage from './HealthPage'
+import DiagnosticsPage from './DiagnosticsPage'
 
 function formatSize(bytes: number): string {
   if (!bytes || bytes <= 0) return '0 B'
@@ -14,7 +16,8 @@ function formatSize(bytes: number): string {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`
 }
 
-export default function MaintenancePage() {
+/** 修复与清理（原独立「维护」页的全部内容） */
+function RepairPanel() {
   const [cleanItems, setCleanItems] = useState<any[]>([])
   const [selected, setSelected] = useState<string[]>([])
   const [cleanBusy, setCleanBusy] = useState(false)
@@ -36,9 +39,7 @@ export default function MaintenancePage() {
       const result = await api.analyze_cleanup()
       const items = result?.items ?? []
       setCleanItems(items)
-      setSelected(
-        items.filter((i: any) => i.exists && i.size > 0).map((i: any) => i.key)
-      )
+      setSelected(items.filter((i: any) => i.exists && i.size > 0).map((i: any) => i.key))
     } catch {
       setCleanItems([])
     }
@@ -71,9 +72,7 @@ export default function MaintenancePage() {
   }, [])
 
   const toggle = (key: string) => {
-    setSelected((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    )
+    setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
   }
 
   const clean = async () => {
@@ -82,9 +81,7 @@ export default function MaintenancePage() {
     setCleanMsg('')
     try {
       const result = await api.run_cleanup(selected)
-      setCleanMsg(
-        `${(result?.details ?? []).join('；')}（共释放 ${formatSize(result?.freed ?? 0)}）`
-      )
+      setCleanMsg(`${(result?.details ?? []).join('；')}（共释放 ${formatSize(result?.freed ?? 0)}）`)
       await loadCleanup()
     } catch {
       setCleanMsg('清理失败，请稍后重试')
@@ -124,12 +121,7 @@ export default function MaintenancePage() {
   }
 
   return (
-    <div className="oc-page">
-      <div className="oc-page-header">
-        <div className="oc-page-title">维护</div>
-        <div className="oc-page-desc">清理磁盘垃圾、排查网络问题（所有数据均为本机实时统计）</div>
-      </div>
-
+    <>
       {/* ── 磁盘清理 ── */}
       <div className="oc-panel">
         <div className="oc-panel-title">磁盘清理</div>
@@ -210,9 +202,7 @@ export default function MaintenancePage() {
                     {item.ok ? '✅' : '❌'} {item.name}
                   </div>
                   <div className="oc-list-sub">{item.detail}</div>
-                  {!item.ok && item.suggest && (
-                    <div className="oc-list-warn">建议：{item.suggest}</div>
-                  )}
+                  {!item.ok && item.suggest && <div className="oc-list-warn">建议：{item.suggest}</div>}
                 </div>
               </div>
             ))}
@@ -295,6 +285,48 @@ export default function MaintenancePage() {
           </div>
         )}
       </div>
+    </>
+  )
+}
+
+type Tab = 'checkup' | 'repair' | 'diagnostics'
+
+export default function MaintenancePage() {
+  const [tab, setTab] = useState<Tab>('checkup')
+
+  return (
+    <div className="oc-page">
+      <div className="oc-page-header">
+        <div className="oc-page-title">维护</div>
+        <div className="oc-page-desc">一键体检 · 修复与清理 · 诊断，常用维护能力集中在这里</div>
+      </div>
+
+      <div className="oc-toolbar" style={{ marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Button
+            appearance={tab === 'checkup' ? 'primary' : 'secondary'}
+            onClick={() => setTab('checkup')}
+          >
+            一键体检
+          </Button>
+          <Button
+            appearance={tab === 'repair' ? 'primary' : 'secondary'}
+            onClick={() => setTab('repair')}
+          >
+            修复与清理
+          </Button>
+          <Button
+            appearance={tab === 'diagnostics' ? 'primary' : 'secondary'}
+            onClick={() => setTab('diagnostics')}
+          >
+            诊断
+          </Button>
+        </div>
+      </div>
+
+      {tab === 'checkup' && <HealthPage />}
+      {tab === 'repair' && <RepairPanel />}
+      {tab === 'diagnostics' && <DiagnosticsPage />}
     </div>
   )
 }

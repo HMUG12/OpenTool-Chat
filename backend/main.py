@@ -123,8 +123,16 @@ class AppHost:
         self.tray = TrayIcon(self._show, self._quit)
 
     def _show(self) -> None:
-        if self.window is not None:
-            self.window.show()
+        if self.window is None:
+            return
+        # 先解除最小化（Win32 直控），再显示，避免「点了托盘图标窗口不出来」
+        try:
+            from .system.wincontrol import restore
+
+            restore()
+        except Exception:
+            pass
+        self.window.show()
 
     def _quit(self) -> None:
         try:
@@ -186,9 +194,12 @@ class AppHost:
         self.api.attach_window(self.window)
         self.api.tray_available = self.tray.available
 
-        # 关闭 / Alt+F4 = 最小化到托盘，不退出进程
+        # 关闭 / Alt+F4 的行为由设置决定：默认最小化到托盘常驻，
+        # 用户可在「设置 → 关闭行为」里改为直接退出。
         def on_closing(e: object) -> None:
-            if self.tray.available:
+            from .core import config
+
+            if self.tray.available and bool(config.get("close_to_tray", True)):
                 setattr(e, "cancel", True)
                 self.window.hide()
 

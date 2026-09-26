@@ -397,6 +397,30 @@ class SystemMonitor:
 
         aux = _query_wmi_aux()
 
+        # 显存修正：Win32_VideoController.AdapterRAM 是 32 位字段，8GB 显卡会被
+        # 截断成 4GB；以注册表 HardwareInformation.qwMemorySize 的真实值为准。
+        vram: dict[str, int] = {}
+        try:
+            from .hardware_detail import gpu_vram_from_registry
+
+            vram = gpu_vram_from_registry()
+        except Exception:
+            vram = {}
+
+        gpus: list[dict[str, Any]] = []
+        for gpu_item in aux.get("gpus", []) or []:
+            if not isinstance(gpu_item, dict):
+                continue
+            gpu_name = str(gpu_item.get("name") or "")
+            memory = float(gpu_item.get("memoryGB") or 0) * (1024 ** 3)
+            if gpu_name in vram and vram[gpu_name] > memory:
+                gpu_item = {
+                    **gpu_item,
+                    "memoryGB": round(vram[gpu_name] / (1024 ** 3), 1),
+                    "memorySource": "registry",
+                }
+            gpus.append(gpu_item)
+
         info: dict[str, Any] = {
             "cpu": {
                 "name": cpu_name(),
@@ -413,7 +437,7 @@ class SystemMonitor:
             },
             "swap": {"total": swap.total, "used": swap.used, "percent": swap.percent},
             "disks": disks,
-            "gpus": aux.get("gpus", []),
+            "gpus": gpus,
             "boards": aux.get("boards", []),
             "os": {
                 "system": platform.system(),

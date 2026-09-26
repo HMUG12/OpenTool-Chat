@@ -28,13 +28,20 @@ export interface OcApi {
   check_url(url: string): Promise<any>
   url_alerts(): Promise<any[]>
   check_updates(force?: boolean): Promise<any[]>
+  check_self_update(): Promise<any>
   search_music(keyword?: string): Promise<any[]>
   music_url(path: string): Promise<string>
   search_music_online(keyword: string, platform?: string): Promise<any[]>
   fetch_music(song_id: string, platform?: string): Promise<string>
-  list_wallpapers(directory?: string): Promise<any[]>
-  set_wallpaper(path: string): Promise<boolean>
+  list_wallpapers(directory?: string): Promise<any>
+  set_wallpaper(path: string, style?: string, scale?: number): Promise<any>
   random_wallpaper(directory?: string): Promise<any>
+  import_wallpaper(source: string): Promise<any>
+  pick_wallpaper_file(): Promise<any>
+  set_dynamic_wallpaper(path: string, muted?: boolean): Promise<any>
+  stop_dynamic_wallpaper(): Promise<any>
+  dynamic_wallpaper_status(): Promise<any>
+  current_wallpaper(): Promise<string>
   run_health_checks(): Promise<any>
   list_repairs(): Promise<any[]>
   run_repair(key: string): Promise<any>
@@ -54,20 +61,24 @@ export interface OcApi {
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
+  get_hardware_detail(): Promise<any>
   get_metrics(): Promise<Metrics>
   get_network(): Promise<NetworkInfo>
   get_ip(): Promise<IpInfo>
   query_public_ip(): Promise<PublicIpResult>
   window_minimize(): Promise<void>
   window_toggle_maximize(): Promise<void>
+  window_is_maximized(): Promise<boolean>
   window_close(): Promise<void>
   window_start_drag(): Promise<void>
 
-  // ── 系统集成（托盘 / 自启 / 右键打开方式） ──
+  // ── 系统集成（托盘 / 自启 / 右键打开方式 / 关闭行为） ──
   get_autostart(): Promise<boolean>
   set_autostart(enabled: boolean): Promise<boolean>
   get_openwith_registered(): Promise<boolean>
   set_openwith_registered(enabled: boolean): Promise<boolean>
+  get_close_to_tray(): Promise<boolean>
+  set_close_to_tray(enabled: boolean): Promise<boolean>
 }
 
 // ════════════════════════════════════════════════════════════
@@ -98,7 +109,7 @@ const MOCK_API: OcApi = {
     return {
       name: 'OpenClass-Box（开发预览）',
       version: '-',
-      author: 'OpenClass-Box Contributors',
+      author: 'HMUG12',
       description: '当前为浏览器预览模式，未连接本地后端，因此不展示任何数据',
       portable: true,
       rootDir: '-',
@@ -120,13 +131,22 @@ const MOCK_API: OcApi = {
   async check_url(url) { return { url, host: '', score: 0, level: 'safe', reasons: ['开发模式：未执行真实检测'] } },
   async url_alerts() { return [] },
   async check_updates() { return [] },
+  async check_self_update() {
+    return { ok: false, current: '-', latest: '', hasUpdate: false, url: '', publishedAt: '', message: '开发预览模式' }
+  },
   async search_music() { return [] },
   async music_url(path) { return path },
   async search_music_online() { return [] },
   async fetch_music() { return '' },
-  async list_wallpapers() { return [] },
-  async set_wallpaper() { return false },
+  async list_wallpapers() { return { items: [], importedDir: '' } },
+  async set_wallpaper() { return { ok: false, message: '开发预览模式：无法设置壁纸' } },
   async random_wallpaper() { return { ok: false, message: '' } },
+  async import_wallpaper() { return { ok: false, path: '', message: '开发预览模式：无法导入' } },
+  async pick_wallpaper_file() { return { ok: false, path: '', message: '开发预览模式：无法打开文件选择框' } },
+  async set_dynamic_wallpaper() { return { ok: false, message: '开发预览模式：无法设置动态壁纸' } },
+  async stop_dynamic_wallpaper() { return { ok: true, message: '' } },
+  async dynamic_wallpaper_status() { return { running: false, path: '', hasMpv: false } },
+  async current_wallpaper() { return '' },
   async run_health_checks() { return { items: [], okCount: 0, total: 0, healthy: false } },
   async list_repairs() { return [] },
   async run_repair() { return { ok: false, message: '开发预览模式：无法执行修复', restart: false } },
@@ -144,6 +164,9 @@ const MOCK_API: OcApi = {
   async list_services() { return { items: [], total: 0 } },
   async list_startup() { return { items: [], total: 0 } },
   async get_hardware() { return EMPTY_HARDWARE },
+  async get_hardware_detail() {
+    return { gpus: [], boards: [], bios: [], memModules: [], physicalDisks: [], cpuTemp: null, tempSource: '' }
+  },
   async get_metrics() {
     return {
       timestamp: Date.now(),
@@ -168,12 +191,15 @@ const MOCK_API: OcApi = {
   },
   async window_minimize() {},
   async window_toggle_maximize() {},
+  async window_is_maximized() { return false },
   async window_close() { window.close() },
   async window_start_drag() {},
   async get_autostart() { return false },
   async set_autostart() { return true },
   async get_openwith_registered() { return false },
   async set_openwith_registered() { return false },
+  async get_close_to_tray() { return true },
+  async set_close_to_tray() { return true },
 }
 
 /**

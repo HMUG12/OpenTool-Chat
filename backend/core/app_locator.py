@@ -40,6 +40,8 @@ _APPS: dict[str, dict] = {
     },
     "libreoffice": {
         "app_paths": "soffice.exe",
+        # 与 OpenOffice 同名，必须用目录关键字区分，否则会误指向 OpenOffice
+        "app_paths_hint": "libreoffice",
         "reg_keys": (
             [(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\LibreOffice\LibreOffice", ("Path",), "program\\soffice.exe")]
             if winreg else []
@@ -49,6 +51,7 @@ _APPS: dict[str, dict] = {
     },
     "openoffice": {
         "app_paths": "soffice.exe",
+        "app_paths_hint": "openoffice",
         "reg_keys": [],
         # OpenOffice 4.1.x 无法在非 ASCII（中文）路径下运行，会报
         # "central configuration" 错误。因此除 tools/ 便携版外，额外支持
@@ -56,6 +59,10 @@ _APPS: dict[str, dict] = {
         "abs_paths": [
             "D:\\OpenClassOO\\program\\soffice.exe",
             "C:\\OpenClassOO\\program\\soffice.exe",
+            "C:\\Program Files\\OpenOffice 4\\program\\soffice.exe",
+            "C:\\Program Files (x86)\\OpenOffice 4\\program\\soffice.exe",
+            "D:\\Program Files\\OpenOffice 4\\program\\soffice.exe",
+            "C:\\Program Files\\OpenOffice.org 3\\program\\soffice.exe",
         ],
         "program_dirs": [
             "OpenOffice 4\\program\\soffice.exe",
@@ -88,7 +95,13 @@ FILE_ROUTES: dict[str, str] = {
 }
 
 
-def _from_app_paths(exe_name: str) -> Optional[Path]:
+def _from_app_paths(exe_name: str, hint: str = "") -> Optional[Path]:
+    """从 App Paths 注册表定位。
+
+    hint 是路径必须包含的关键字（小写）：OpenOffice 与 LibreOffice 的
+    可执行文件同名（都是 soffice.exe），只按文件名匹配会把两者搞混，
+    必须用目录关键字区分。
+    """
     if not winreg or not exe_name:
         return None
     try:
@@ -98,7 +111,7 @@ def _from_app_paths(exe_name: str) -> Optional[Path]:
         )
         value, _ = winreg.QueryValueEx(key, None)
         path = Path(value)
-        if path.exists():
+        if path.exists() and (not hint or hint in str(path).lower()):
             return path
     except OSError:
         pass
@@ -177,7 +190,7 @@ def find_app(name: str) -> Optional[Path]:
         return None
     for finder in (
         lambda: _from_abs_paths(spec.get("abs_paths", [])),
-        lambda: _from_app_paths(spec.get("app_paths", "")),
+        lambda: _from_app_paths(spec.get("app_paths", ""), spec.get("app_paths_hint", "")),
         lambda: _from_reg_keys(spec.get("reg_keys", [])),
         lambda: _from_program_dirs(spec.get("program_dirs", [])),
         lambda: _from_portable(*spec.get("portable", ("", ()))),

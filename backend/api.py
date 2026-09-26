@@ -19,7 +19,7 @@ from .core.monitor import monitor, query_public_ip
 from .core.registry import tool_registry as registry
 from .core.runner import launch_detached, open_in_explorer
 
-AUTHOR = "OpenClass Contributors"
+AUTHOR = "HMUG12"
 DESCRIPTION = "开源实用工具箱"
 
 # 合法的展示名 ↔ 内部值
@@ -111,23 +111,76 @@ class Api:
 
         return fetch_online(song_id, platform)
 
-    def list_wallpapers(self, directory: str = "") -> list[dict[str, Any]]:
-        """列出可用作壁纸的图片。"""
-        from .core.wallpaper import list_images
+    def list_wallpapers(self, directory: str = "") -> dict[str, Any]:
+        """列出可用壁纸（图片 / 动图 / 视频，含导入目录）。"""
+        from .core.wallpaper import list_wallpapers
 
-        return list_images(directory)
+        return list_wallpapers(directory)
 
-    def set_wallpaper(self, path: str) -> bool:
-        """把指定图片设为桌面壁纸。"""
+    def set_wallpaper(
+        self, path: str, style: str = "fill", scale: int = 100
+    ) -> dict[str, Any]:
+        """设置静态图片壁纸（style 控制位置/大小，scale 为屏幕百分比）。"""
         from .core.wallpaper import set_wallpaper
 
-        return set_wallpaper(path)
+        return set_wallpaper(path, style, scale)
 
     def random_wallpaper(self, directory: str = "") -> dict[str, Any]:
         """从目录随机更换壁纸。"""
         from .core.wallpaper import random_wallpaper
 
         return random_wallpaper(directory)
+
+    def import_wallpaper(self, source: str) -> dict[str, Any]:
+        """把外部壁纸文件导入程序数据目录。"""
+        from .core.wallpaper import import_file
+
+        return import_file(source)
+
+    def pick_wallpaper_file(self) -> dict[str, Any]:
+        """弹出文件选择框，返回用户选中的壁纸路径。"""
+        if self._window is None:
+            return {"ok": False, "path": "", "message": "窗口未就绪"}
+        try:
+            import webview
+
+            result = self._window.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=(
+                    "壁纸文件 (*.jpg;*.jpeg;*.png;*.bmp;*.webp;*.gif;*.mp4;*.webm;*.mkv;*.avi)",
+                    "所有文件 (*.*)",
+                ),
+            )
+        except Exception as exc:
+            return {"ok": False, "path": "", "message": f"打开文件选择框失败：{exc}"}
+        if not result:
+            return {"ok": False, "path": "", "message": "未选择文件"}
+        return {"ok": True, "path": str(result[0]), "message": ""}
+
+    def set_dynamic_wallpaper(self, path: str, muted: bool = True) -> dict[str, Any]:
+        """设置 GIF / 视频动态壁纸（需要 mpv）。"""
+        from .core.wallpaper import set_dynamic
+
+        return set_dynamic(path, muted)
+
+    def stop_dynamic_wallpaper(self) -> dict[str, Any]:
+        """停止动态壁纸。"""
+        from .core.wallpaper import stop_dynamic
+
+        return stop_dynamic()
+
+    def dynamic_wallpaper_status(self) -> dict[str, Any]:
+        """动态壁纸运行状态。"""
+        from .core.wallpaper import dynamic_status
+
+        return dynamic_status()
+
+    def current_wallpaper(self) -> str:
+        """当前桌面壁纸路径。"""
+        from .core.wallpaper import current_wallpaper
+
+        return current_wallpaper()
 
     def run_health_checks(self) -> dict[str, Any]:
         """一键体检：网络 / 声音 / 显示 / 磁盘 / 内存（全部离线）。"""
@@ -224,6 +277,26 @@ class Api:
         from .core.procs import list_startup
 
         return list_startup()
+
+    def get_hardware_detail(self) -> dict[str, Any]:
+        """详细硬件信息（CPU/显卡/内存/硬盘/主板/温度），全部本机实测。"""
+        from .core import hardware_detail
+
+        return hardware_detail.collect()
+
+    def check_self_update(self) -> dict[str, Any]:
+        """检测本软件自身是否有新版本（GitHub Releases）。"""
+        from .core.updater import check_self_update
+
+        return check_self_update()
+
+    def get_close_to_tray(self) -> bool:
+        """关闭窗口时是否最小化到托盘（默认开启）。"""
+        return bool(config.get("close_to_tray", True))
+
+    def set_close_to_tray(self, value: bool) -> bool:
+        config.set("close_to_tray", bool(value))
+        return True
 
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
@@ -339,10 +412,17 @@ class Api:
     # ══════════════════════════════════════════════════════
 
     def window_minimize(self) -> None:
-        if self._window is not None:
+        from .system.wincontrol import minimize
+
+        # Win32 直控优先：pywebview 在「最大化 → 最小化 → 恢复」后状态会失步
+        if not minimize() and self._window is not None:
             self._window.minimize()
 
     def window_toggle_maximize(self) -> None:
+        from .system.wincontrol import toggle_maximize
+
+        if toggle_maximize():
+            return
         if self._window is None:
             return
         try:
@@ -352,6 +432,12 @@ class Api:
                 self._window.maximize()
         except Exception:
             pass
+
+    def window_is_maximized(self) -> bool:
+        """供前端同步最大化按钮图标状态。"""
+        from .system.wincontrol import is_maximized
+
+        return is_maximized()
 
     def window_close(self) -> None:
         """关闭按钮 = 最小化到托盘（常驻后台）；无托盘时才是真正退出。"""

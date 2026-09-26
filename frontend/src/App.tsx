@@ -9,9 +9,9 @@ import {
 } from '@fluentui/react-components'
 import {
   GaugeRegular,
+  HardDriveRegular,
   InfoRegular,
   MusicNote1Regular,
-  PuzzlePieceRegular,
   SettingsRegular,
   ShieldRegular,
   ToolboxRegular,
@@ -22,18 +22,30 @@ import TitleBar from './components/TitleBar'
 import SideNav, { type NavItem } from './components/SideNav'
 import DashboardPage from './pages/DashboardPage'
 import ToolsPage from './pages/ToolsPage'
-import PluginsPage from './pages/PluginsPage'
 import SettingsPage from './pages/SettingsPage'
 import AboutPage from './pages/AboutPage'
 import SecurityPage from './pages/SecurityPage'
 import MusicPage from './pages/MusicPage'
-import UpdatePage from './pages/UpdatePage'
 import WallpaperPage from './pages/WallpaperPage'
-import HealthPage from './pages/HealthPage'
 import MaintenancePage from './pages/MaintenancePage'
-import DiagnosticsPage from './pages/DiagnosticsPage'
+import HardwarePage from './pages/HardwarePage'
 
-type PageId = 'health' | 'maintenance' | 'diagnostics' | 'dashboard' | 'music' | 'wallpaper' | 'tools' | 'plugins' | 'security' | 'update' | 'settings' | 'about'
+/**
+ * 导航结构（已按使用习惯合并）：
+ *   一键体检 / 诊断  →  并入「维护」（页内分栏：体检 / 修复与清理 / 诊断）
+ *   插件            →  并入「工具箱」（按来源筛选）
+ *   更新            →  并入「设置」（含本软件版本检测与关闭行为）
+ */
+type PageId =
+  | 'maintenance'
+  | 'dashboard'
+  | 'hardware'
+  | 'tools'
+  | 'music'
+  | 'wallpaper'
+  | 'security'
+  | 'settings'
+  | 'about'
 
 interface Toast {
   ok: boolean
@@ -49,6 +61,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<Toast | null>(null)
   const [version, setVersion] = useState('')
+  const [hasUpdate, setHasUpdate] = useState(false)
 
   // ── 初始加载 ──
   useEffect(() => {
@@ -64,6 +77,18 @@ export default function App() {
         setVersion(info.version)
       } finally {
         setLoading(false)
+      }
+    })()
+  }, [])
+
+  // ── 本软件更新检测（有新版则在「设置」上显示角标） ──
+  useEffect(() => {
+    void (async () => {
+      try {
+        const result = await api.check_self_update()
+        setHasUpdate(Boolean(result?.hasUpdate))
+      } catch {
+        /* 未联网时忽略，不误报 */
       }
     })()
   }, [])
@@ -98,9 +123,9 @@ export default function App() {
     }
   }, [])
 
-  // 进入「工具箱 / 插件」页时自动刷新一次
+  // 进入「工具箱」页时自动刷新一次
   useEffect(() => {
-    if (page === 'tools' || page === 'plugins') {
+    if (page === 'tools') {
       void silentRefresh()
     }
   }, [page, silentRefresh])
@@ -138,30 +163,30 @@ export default function App() {
   }, [])
 
   const navItems: NavItem[] = [
-    { id: 'health', label: '一键体检', icon: <ShieldRegular fontSize={16} /> },
     { id: 'maintenance', label: '维护', icon: <ToolboxRegular fontSize={16} /> },
-    { id: 'diagnostics', label: '诊断', icon: <GaugeRegular fontSize={16} /> },
     { id: 'dashboard', label: '系统状态', icon: <GaugeRegular fontSize={16} /> },
+    { id: 'hardware', label: '硬件信息', icon: <HardDriveRegular fontSize={16} /> },
+    { id: 'tools', label: '工具箱', icon: <ToolboxRegular fontSize={16} />, badge: tools.length },
     { id: 'music', label: '音乐', icon: <MusicNote1Regular fontSize={16} /> },
     { id: 'wallpaper', label: '壁纸', icon: <SettingsRegular fontSize={16} /> },
-    { id: 'tools', label: '工具箱', icon: <ToolboxRegular fontSize={16} />, badge: tools.length },
-    { id: 'plugins', label: '插件', icon: <PuzzlePieceRegular fontSize={16} /> },
     { id: 'security', label: '安全', icon: <ShieldRegular fontSize={16} /> },
-    { id: 'update', label: '更新', icon: <SettingsRegular fontSize={16} /> },
-    { id: 'settings', label: '设置', icon: <SettingsRegular fontSize={16} /> },
+    {
+      id: 'settings',
+      label: '设置',
+      icon: <SettingsRegular fontSize={16} />,
+      badge: hasUpdate ? 1 : undefined,
+    },
     { id: 'about', label: '关于', icon: <InfoRegular fontSize={16} /> },
   ]
 
   const renderPage = () => {
     switch (page) {
-      case 'dashboard':
-        return <DashboardPage />
-      case 'health':
-        return <HealthPage />
       case 'maintenance':
         return <MaintenancePage />
-      case 'diagnostics':
-        return <DiagnosticsPage />
+      case 'dashboard':
+        return <DashboardPage />
+      case 'hardware':
+        return <HardwarePage />
       case 'tools':
         return (
           <ToolsPage
@@ -169,18 +194,15 @@ export default function App() {
             category={category}
             setCategory={setCategory}
             onLaunch={launch}
+            onRefresh={refresh}
           />
         )
-      case 'plugins':
-        return <PluginsPage tools={tools} onRefresh={refresh} />
-      case 'security':
-        return <SecurityPage />
       case 'music':
         return <MusicPage />
       case 'wallpaper':
         return <WallpaperPage />
-      case 'update':
-        return <UpdatePage />
+      case 'security':
+        return <SecurityPage />
       case 'settings':
         return <SettingsPage themeMode={themeMode} setThemeMode={setThemeMode} />
       case 'about':

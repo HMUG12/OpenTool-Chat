@@ -24,7 +24,10 @@ from .paths import app_root
 
 _TIMEOUT = 6.0
 _CACHE_TTL = 30 * 60  # 30 分钟内不重复请求
-_HEADERS = {"User-Agent": "OpenClass", "Accept": "application/vnd.github+json"}
+_HEADERS = {"User-Agent": "OpenClass-Box", "Accept": "application/vnd.github+json"}
+
+# 本软件自身仓库：更新检测的首要目标就是「OpenClass-Box 自己是否最新」
+SELF_REPO = "HMUG12/OpenClass-Box"
 
 # 组件清单：id / 展示名 / GitHub 仓库 / 本地目录（读取 tool.json 里的 version）
 # repo 留空表示该组件暂不参与在线检测（例如纯自研模块）。
@@ -144,6 +147,54 @@ def check_updates(force: bool = False) -> list[dict[str, Any]]:
         _cache["at"] = now
         _cache["items"] = items
     return items
+
+
+def _current_version() -> str:
+    """读取本软件版本号（兼容包内运行与脚本直接导入两种方式）。"""
+    try:
+        from .. import __version__  # type: ignore[attr-defined]
+
+        return str(__version__)
+    except ImportError:
+        pass
+    try:
+        import backend  # type: ignore[import-not-found]
+
+        return str(getattr(backend, "__version__", ""))
+    except ImportError:
+        return ""
+
+
+def check_self_update() -> dict[str, Any]:
+    """检测本软件（OpenClass-Box）自身是否有新版本。
+
+    与组件检测不同，这里即使失败也要返回结构完整的结果，
+    让设置页始终有明确反馈（而不是空白）。
+    """
+    current = _current_version()
+    fallback_url = f"https://github.com/{SELF_REPO}/releases"
+    info = _query_latest(SELF_REPO)
+    if info is None or not info["latest"]:
+        return {
+            "ok": False,
+            "current": current,
+            "latest": "",
+            "hasUpdate": False,
+            "url": fallback_url,
+            "publishedAt": "",
+            "message": "未能获取版本信息（可能未联网或访问受限）",
+        }
+
+    latest = info["latest"].lstrip("vV")
+    return {
+        "ok": True,
+        "current": current,
+        "latest": latest,
+        "hasUpdate": _version_tuple(info["latest"]) > _version_tuple(current),
+        "url": info["url"] or fallback_url,
+        "publishedAt": info["publishedAt"],
+        "message": "",
+    }
 
 
 def updates_count() -> int:

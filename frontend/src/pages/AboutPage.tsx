@@ -49,9 +49,15 @@ export default function AboutPage({ toolCount }: { toolCount: number }) {
           <div style={{ marginTop: 22, display: 'flex', gap: 10 }}>
             <Button
               appearance="primary"
-              onClick={() => void api.open_url('https://github.com/HMUG12/OpenClass')}
+              onClick={() => void api.open_url('https://github.com/HMUG12/OpenClass-Box')}
             >
               项目仓库
+            </Button>
+            <Button
+              appearance="secondary"
+              onClick={() => void api.open_url('https://github.com/HMUG12/OpenClass-Box/releases')}
+            >
+              版本发布
             </Button>
             <Button
               appearance="secondary"

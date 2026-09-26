@@ -55,24 +55,53 @@ function SwitchRow({
 export default function SettingsPage({ themeMode, setThemeMode }: Props) {
   const [autostart, setAutostart] = useState(false)
   const [openwith, setOpenwith] = useState(false)
+  const [closeToTray, setCloseToTray] = useState(true)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+
+  // ── 版本与更新 ──
+  const [version, setVersion] = useState('')
+  const [selfUpdate, setSelfUpdate] = useState<any>(null)
+  const [components, setComponents] = useState<any[]>([])
+  const [updateBusy, setUpdateBusy] = useState(true)
 
   useEffect(() => {
     void (async () => {
       try {
-        const [a, o] = await Promise.all([
+        const [a, o, c, info] = await Promise.all([
           api.get_autostart(),
           api.get_openwith_registered(),
+          api.get_close_to_tray(),
+          api.get_info(),
         ])
         setAutostart(a)
         setOpenwith(o)
+        setCloseToTray(c)
+        setVersion(info.version)
       } catch {
         // 忽略：开发模式下拿不到真实值
       } finally {
         setLoading(false)
       }
     })()
+  }, [])
+
+  const checkUpdate = async () => {
+    setUpdateBusy(true)
+    try {
+      const [self, comps] = await Promise.all([api.check_self_update(), api.check_updates(true)])
+      setSelfUpdate(self)
+      setComponents(comps ?? [])
+    } catch {
+      setSelfUpdate({ ok: false, message: '检查失败（可能未联网）' })
+      setComponents([])
+    } finally {
+      setUpdateBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    void checkUpdate()
   }, [])
 
   const select = async (m: ThemeMode) => {
@@ -99,6 +128,18 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
       setBusy(false)
     }
   }
+
+  const toggleCloseToTray = async (checked: boolean) => {
+    setBusy(true)
+    try {
+      const ok = await api.set_close_to_tray(checked)
+      setCloseToTray(ok ? checked : closeToTray)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const componentUpdates = components.filter((item) => item.hasUpdate)
 
   return (
     <div className="oc-page">
@@ -152,6 +193,14 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
             />
             <div style={{ borderTop: '1px solid var(--oc-border)', margin: '4px 0' }} />
             <SwitchRow
+              label="关闭时最小化到托盘"
+              desc="开启：点关闭按钮只隐藏窗口，程序继续驻留托盘；关闭：点关闭直接退出程序"
+              checked={closeToTray}
+              disabled={busy}
+              onChange={toggleCloseToTray}
+            />
+            <div style={{ borderTop: '1px solid var(--oc-border)', margin: '4px 0' }} />
+            <SwitchRow
               label="右键「打开方式」集成"
               desc="把 OpenClass-Box 收编进文件的右键打开方式菜单（需打包为 exe 后生效）"
               checked={openwith}
@@ -159,6 +208,76 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
               onChange={toggleOpenwith}
             />
           </>
+        )}
+      </div>
+
+      <div className="oc-panel-title" style={{ fontSize: 12, opacity: 0.8 }}>
+        更新
+      </div>
+      <div className="oc-panel" style={{ marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            padding: '4px 0',
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600 }}>
+              OpenClass-Box {version ? `v${version}` : ''}
+            </div>
+            <div className="oc-usage-sub">
+              {updateBusy
+                ? '正在检查新版本…'
+                : selfUpdate?.hasUpdate
+                  ? `发现新版本：${selfUpdate.latest}${selfUpdate.publishedAt ? `（${selfUpdate.publishedAt.slice(0, 10)} 发布）` : ''}`
+                  : selfUpdate?.ok
+                    ? '已是最新版本'
+                    : (selfUpdate?.message ?? '未能获取版本信息')}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button size="small" appearance="secondary" onClick={checkUpdate} disabled={updateBusy}>
+              重新检查
+            </Button>
+            {selfUpdate?.hasUpdate && (
+              <Button
+                size="small"
+                appearance="primary"
+                onClick={() => void api.open_url(selfUpdate.url)}
+              >
+                前往下载
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {componentUpdates.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <div className="oc-list-sub" style={{ marginBottom: 6 }}>
+              已集成组件有 {componentUpdates.length} 项可更新：
+            </div>
+            {componentUpdates.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '4px 0',
+                }}
+              >
+                <span className="oc-usage-sub">
+                  {item.name}：{item.current} → {item.latest}
+                </span>
+                <Button size="small" onClick={() => void api.open_url(item.url)}>
+                  前往
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
