@@ -796,6 +796,22 @@ body {
   opacity: 0.6;
 }
 
+/* 行内链接式按钮（展开知识库条目等） */
+.oc-linklike {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--colorBrandForeground1, #4c8dff);
+  font-size: 12.5px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.oc-linklike:hover {
+  text-decoration: underline;
+}
+
 /* ── 信息表（关于页 / 硬件页共用） ── */
 
 .oc-info-grid {

@@ -61,6 +61,11 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
 
   const [dataDir, setDataDir] = useState('')
 
+  // ── 手机控制台 ──
+  const [consoleState, setConsoleState] = useState<any>(null)
+  const [consoleBusy, setConsoleBusy] = useState(false)
+  const [consoleMsg, setConsoleMsg] = useState('')
+
   // ── 版本与更新 ──
   const [version, setVersion] = useState('')
   const [selfUpdate, setSelfUpdate] = useState<any>(null)
@@ -143,6 +148,55 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
     }
   }
 
+  const loadConsole = async () => {
+    try {
+      setConsoleState(await api.webconsole_status())
+    } catch {
+      setConsoleState(null)
+    }
+  }
+
+  useEffect(() => {
+    void loadConsole()
+  }, [])
+
+  const toggleConsole = async (checked: boolean) => {
+    setConsoleBusy(true)
+    setConsoleMsg('')
+    try {
+      const result = checked ? await api.webconsole_start() : await api.webconsole_stop()
+      if (result && result.ok === false) setConsoleMsg(result.message ?? '')
+      await loadConsole()
+    } catch (error) {
+      setConsoleMsg(`操作失败：${error}`)
+    } finally {
+      setConsoleBusy(false)
+    }
+  }
+
+  const regenerateCode = async () => {
+    setConsoleBusy(true)
+    try {
+      const result = await api.webconsole_regenerate()
+      if (result && result.ok === false) setConsoleMsg(result.message ?? '')
+      else setConsoleMsg('访问码已更换，已登录的手机会自动退出')
+      await loadConsole()
+    } finally {
+      setConsoleBusy(false)
+    }
+  }
+
+  const copyConsoleUrl = async () => {
+    const url = consoleState?.url ?? ''
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+      setConsoleMsg('地址已复制，可以直接发到微信/QQ 再在手机上打开')
+    } catch {
+      setConsoleMsg(`复制失败，请手动输入：${url}`)
+    }
+  }
+
   const componentUpdates = components.filter((item) => item.hasUpdate)
 
   return (
@@ -212,6 +266,73 @@ export default function SettingsPage({ themeMode, setThemeMode }: Props) {
               onChange={toggleOpenwith}
             />
           </>
+        )}
+      </div>
+
+      <div className="oc-panel-title" style={{ fontSize: 12, opacity: 0.8, marginTop: 20 }}>
+        手机控制台
+      </div>
+      <div className="oc-panel" style={{ marginBottom: 12 }}>
+        <SwitchRow
+          label="开启手机控制台"
+          desc="同一 WiFi 下用手机浏览器打开下面的地址，即可查看状态、跑体检、远程修复（无需装 App、不连外网）"
+          checked={!!consoleState?.running}
+          disabled={consoleBusy || loading}
+          onChange={toggleConsole}
+        />
+        {consoleState?.running && (
+          <>
+            <div style={{ borderTop: '1px solid var(--oc-border)', margin: '4px 0' }} />
+            <div style={{ padding: '10px 0' }}>
+              <div style={{ fontWeight: 600 }}>手机访问地址</div>
+              <div
+                style={{
+                  fontFamily: 'var(--oc-mono)',
+                  fontSize: 17,
+                  marginTop: 4,
+                  userSelect: 'text',
+                }}
+              >
+                {consoleState.url || '未检测到局域网 IP（请检查网络连接）'}
+              </div>
+              <div className="oc-usage-sub" style={{ marginTop: 10 }}>
+                访问码：
+                <b
+                  style={{
+                    fontSize: 17,
+                    letterSpacing: 3,
+                    fontFamily: 'var(--oc-mono)',
+                    marginLeft: 4,
+                  }}
+                >
+                  {consoleState.code}
+                </b>
+                <span style={{ marginLeft: 8 }}>（手机首次访问时输入）</span>
+              </div>
+              <div className="oc-actions" style={{ marginTop: 10 }}>
+                <Button size="small" appearance="secondary" onClick={() => void copyConsoleUrl()}>
+                  复制地址
+                </Button>
+                <Button
+                  size="small"
+                  appearance="secondary"
+                  disabled={consoleBusy}
+                  onClick={() => void regenerateCode()}
+                >
+                  更换访问码
+                </Button>
+                <span className="oc-usage-sub">已登录手机：{consoleState.clients ?? 0} 台</span>
+              </div>
+              <div className="oc-usage-sub" style={{ marginTop: 8 }}>
+                只允许局域网来源访问；连续输错 5 次会锁定 1 分钟；关闭开关后所有手机立即失效。
+              </div>
+            </div>
+          </>
+        )}
+        {consoleMsg && (
+          <div className="oc-usage-sub" style={{ marginTop: 8 }}>
+            {consoleMsg}
+          </div>
         )}
       </div>
 

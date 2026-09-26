@@ -63,6 +63,27 @@ export interface OcApi {
   portable_status(): Promise<any>
   list_removable_drives(): Promise<any[]>
   make_rescue_usb(drive: string): Promise<any>
+  webconsole_status(): Promise<any>
+  webconsole_start(port?: number): Promise<any>
+  webconsole_stop(): Promise<any>
+  webconsole_regenerate(): Promise<any>
+  classroom_report(): Promise<any>
+  refresh_teaching_apps(): Promise<any>
+  open_touch_calibration(): Promise<any>
+  open_display_switch(): Promise<any>
+  kb_stats(): Promise<any>
+  kb_search(keyword?: string, category?: string): Promise<any[]>
+  kb_match(): Promise<any>
+  kb_add(
+    title: string,
+    symptom: string,
+    cause: string,
+    solution: string,
+    category?: string,
+    tags?: string
+  ): Promise<any>
+  kb_export_issue(description: string, category?: string): Promise<any>
+  kb_import(payload: string): Promise<any>
   search_music(keyword?: string): Promise<any[]>
   music_url(path: string): Promise<string>
   search_music_online(keyword: string, platform?: string): Promise<any[]>
@@ -213,6 +234,24 @@ const MOCK_API: OcApi = {
   async portable_status() { return { portable: false, dataDir: '-', appRoot: '-', removable: [] } },
   async list_removable_drives() { return [] },
   async make_rescue_usb() { return { ok: false, message: '开发预览模式：无法制作急救盘' } },
+  async webconsole_status() {
+    return { running: false, port: 0, code: '', ip: '', url: '', clients: 0, portDefault: 38610 }
+  },
+  async webconsole_start() { return { ok: false, message: '开发预览模式：无法启动控制台' } },
+  async webconsole_stop() { return { ok: true, message: '开发预览模式' } },
+  async webconsole_regenerate() { return { ok: false, code: '', message: '开发预览模式' } },
+  async classroom_report() {
+    return { items: [], apps: [], total: 0 }
+  },
+  async refresh_teaching_apps() { return { items: [], detail: '开发预览模式：无法扫描' } },
+  async open_touch_calibration() { return { ok: false, message: '开发预览模式：无法打开校准' } },
+  async open_display_switch() { return { ok: false, message: '开发预览模式：无法打开投影面板' } },
+  async kb_stats() { return { version: '-', builtin: 0, local: 0, total: 0, categories: [] } },
+  async kb_search() { return [] },
+  async kb_match() { return { environment: {}, items: [], total: 0 } },
+  async kb_add() { return { ok: false, message: '开发预览模式' } },
+  async kb_export_issue() { return { ok: false, path: '', message: '开发预览模式' } },
+  async kb_import() { return { ok: false, message: '开发预览模式' } },
   async search_music() { return [] },
   async music_url(path) { return path },
   async search_music_online() { return [] },

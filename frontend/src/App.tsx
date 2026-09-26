@@ -13,6 +13,7 @@ import {
   HardDriveRegular,
   InfoRegular,
   MusicNote1Regular,
+  BookRegular,
   SettingsRegular,
   ShieldRegular,
   ToolboxRegular,
@@ -31,6 +32,7 @@ import WallpaperPage from './pages/WallpaperPage'
 import MaintenancePage from './pages/MaintenancePage'
 import HardwarePage from './pages/HardwarePage'
 import LanPage from './pages/LanPage'
+import ClassroomPage from './pages/ClassroomPage'
 
 /**
  * 导航结构（已按使用习惯合并）：
@@ -43,6 +45,7 @@ type PageId =
   | 'dashboard'
   | 'hardware'
   | 'lan'
+  | 'classroom'
   | 'tools'
   | 'music'
   | 'wallpaper'
@@ -171,6 +174,7 @@ export default function App() {
     { id: 'hardware', label: '硬件信息', icon: <HardDriveRegular fontSize={16} /> },
     { id: 'lan', label: '机房管理', icon: <DesktopRegular fontSize={16} /> },
     { id: 'maintenance', label: '维护', icon: <ToolboxRegular fontSize={16} /> },
+    { id: 'classroom', label: '课堂', icon: <BookRegular fontSize={16} /> },
     { id: 'tools', label: '工具箱', icon: <ToolboxRegular fontSize={16} />, badge: tools.length },
     { id: 'music', label: '音乐', icon: <MusicNote1Regular fontSize={16} /> },
     { id: 'wallpaper', label: '壁纸', icon: <SettingsRegular fontSize={16} /> },
@@ -190,6 +194,8 @@ export default function App() {
         return <LanPage />
       case 'maintenance':
         return <MaintenancePage />
+      case 'classroom':
+        return <ClassroomPage />
       case 'dashboard':
         return <DashboardPage />
       case 'hardware':
@@ -248,7 +254,7 @@ export default function App() {
           )}
 
           {/* 右下角版本标识 */}
-          <div className="oc-version-badge">v{version || '0.1.3 Beta'}</div>
+          <div className="oc-version-badge">v{version || '0.1.4 Beta'}</div>
         </div>
       </div>
     </FluentProvider>

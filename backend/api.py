@@ -437,6 +437,110 @@ class Api:
 
         return make_rescue_usb(drive)
 
+    # ══════════════════════════════════════════════════════
+    # 手机 Web 控制台（局域网零安装）
+    # ══════════════════════════════════════════════════════
+
+    def webconsole_status(self) -> dict[str, Any]:
+        """手机控制台状态（是否运行 / 地址 / 访问码 / 已登录设备数）。"""
+        from .core.webconsole import status
+
+        return status()
+
+    def webconsole_start(self, port: int = 38610) -> dict[str, Any]:
+        """启动手机控制台（手机在同一 WiFi 下即可访问）。"""
+        from .core.webconsole import start
+
+        return start(port)
+
+    def webconsole_stop(self) -> dict[str, Any]:
+        """停止手机控制台。"""
+        from .core.webconsole import stop
+
+        return stop()
+
+    def webconsole_regenerate(self) -> dict[str, Any]:
+        """更换访问码（已登录的手机全部失效）。"""
+        from .core.webconsole import regenerate
+
+        return {"ok": True, "code": regenerate()}
+
+    # ══════════════════════════════════════════════════════
+    # 课堂专属工具（投屏 / 触摸 / 教学软件 / 还原环境）
+    # ══════════════════════════════════════════════════════
+
+    def classroom_report(self) -> dict[str, Any]:
+        """课堂检测汇总：投影拓扑 / 触摸 / 无线投屏 / 教学软件 / 还原环境。"""
+        from .core.classroom import report
+
+        return report()
+
+    def refresh_teaching_apps(self) -> dict[str, Any]:
+        """强制重新扫描教学软件（跳过 5 分钟缓存）。"""
+        from .core.classroom import teaching_apps
+
+        return teaching_apps(force=True)
+
+    def open_touch_calibration(self) -> dict[str, Any]:
+        """打开 Windows 触摸校准工具。"""
+        from .core.classroom import open_touch_calibration
+
+        return open_touch_calibration()
+
+    def open_display_switch(self) -> dict[str, Any]:
+        """打开投影模式切换面板（等同 Win+P）。"""
+        from .core.classroom import open_display_switch
+
+        return open_display_switch()
+
+    # ══════════════════════════════════════════════════════
+    # 课堂兼容性知识库（离线条目 + 环境匹配 + 累积分享）
+    # ══════════════════════════════════════════════════════
+
+    def kb_stats(self) -> dict[str, Any]:
+        """知识库统计（条目数 / 分类 / 版本）。"""
+        from .core.kb import stats
+
+        return stats()
+
+    def kb_search(self, keyword: str = "", category: str = "") -> list[dict[str, Any]]:
+        """检索知识库。"""
+        from .core.kb import search
+
+        return search(keyword, category)
+
+    def kb_match(self) -> dict[str, Any]:
+        """与本机环境相关的已知问题（系统版本 + 已装软件 + 硬件能力）。"""
+        from .core.kb import match_environment
+
+        return match_environment()
+
+    def kb_add(
+        self,
+        title: str,
+        symptom: str,
+        cause: str,
+        solution: str,
+        category: str = "其他",
+        tags: str = "",
+    ) -> dict[str, Any]:
+        """把一条经验加进本地知识库。"""
+        from .core.kb import add_entry
+
+        return add_entry(title, symptom, cause, solution, category, tags)
+
+    def kb_export_issue(self, description: str, category: str = "") -> dict[str, Any]:
+        """导出标准化问题报告（含环境快照），便于分享或提 PR。"""
+        from .core.kb import export_issue
+
+        return export_issue(description, category)
+
+    def kb_import(self, payload: str) -> dict[str, Any]:
+        """导入别处分享的知识库条目（JSON 文本或文件路径）。"""
+        from .core.kb import import_entries
+
+        return import_entries(payload)
+
     def url_alerts(self) -> list[dict[str, Any]]:
         """取出剪贴板监听产生的风险网址告警（取出即清空）。"""
         from .core.url_watch import alerts

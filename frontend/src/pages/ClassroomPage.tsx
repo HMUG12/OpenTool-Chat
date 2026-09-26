@@ -1,0 +1,163 @@
+import { useEffect, useState } from 'react'
+import { Button, Spinner } from '@fluentui/react-components'
+import { api } from '../api'
+import KbPanel from '../components/KbPanel'
+
+/** 状态圆点 */
+function Dot({ ok }: { ok: boolean }) {
+  return (
+    <span
+      style={{
+        width: 9,
+        height: 9,
+        borderRadius: '50%',
+        flex: '0 0 auto',
+        marginTop: 6,
+        background: ok ? 'var(--oc-positive)' : 'var(--oc-warning)',
+      }}
+    />
+  )
+}
+
+export default function ClassroomPage() {
+  const [report, setReport] = useState<any>(null)
+  const [busy, setBusy] = useState(true)
+  const [msg, setMsg] = useState('')
+
+  const load = async () => {
+    setBusy(true)
+    try {
+      setReport(await api.classroom_report())
+    } catch {
+      setReport(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    void load()
+  }, [])
+
+  const act = async (fn: () => Promise<any>) => {
+    setMsg('')
+    try {
+      const result = await fn()
+      setMsg(result?.message ?? result?.detail ?? '')
+    } catch (error) {
+      setMsg(`操作失败：${error}`)
+    }
+  }
+
+  const rescanApps = async () => {
+    setMsg('正在重新扫描教学软件…')
+    try {
+      const result = await api.refresh_teaching_apps()
+      setMsg(result?.detail ?? '')
+      await load()
+    } catch (error) {
+      setMsg(`扫描失败：${error}`)
+    }
+  }
+
+  const items: any[] = report?.items ?? []
+  const apps: any[] = report?.apps ?? []
+
+  return (
+    <div className="oc-page">
+      <div className="oc-page-header">
+        <div className="oc-page-title">课堂</div>
+        <div className="oc-page-desc">
+          一体机专属检测：投影与触摸是否正常、教学软件装了什么、有没有还原保护
+        </div>
+      </div>
+
+      <div className="oc-toolbar" style={{ marginBottom: 12 }}>
+        <div className="oc-actions">
+          <Button appearance="primary" onClick={() => void load()} disabled={busy}>
+            {busy ? '检测中…' : '重新检测'}
+          </Button>
+          <Button appearance="secondary" onClick={() => void act(api.open_display_switch)}>
+            投影模式（Win+P）
+          </Button>
+          <Button appearance="secondary" onClick={() => void act(api.open_touch_calibration)}>
+            触摸校准
+          </Button>
+          <Button appearance="secondary" onClick={() => void rescanApps}>
+            重新扫描教学软件
+          </Button>
+        </div>
+        {msg && <span className="oc-list-sub">{msg}</span>}
+      </div>
+
+      {busy && items.length === 0 ? (
+        <div className="oc-panel">
+          <Spinner size="tiny" /> 正在检测投影、触摸、无线投屏与教学软件…
+        </div>
+      ) : (
+        <div className="oc-list">
+          {items.map((item) => (
+            <div className="oc-list-row" key={item.key}>
+              <Dot ok={item.ok} />
+              <div className="oc-list-main">
+                <div className="oc-list-title">{item.name}</div>
+                <div className="oc-list-sub">{item.detail}</div>
+                {item.suggest && <div className="oc-list-warn">{item.suggest}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="oc-panel" style={{ marginTop: 14 }}>
+        <div className="oc-panel-title">
+          教学软件清单
+          {report?.apps?.length > 0 && (
+            <span className="oc-list-sub" style={{ marginLeft: 8, fontWeight: 400 }}>
+              共 {apps.length} 个
+            </span>
+          )}
+        </div>
+        {apps.length === 0 ? (
+          <div className="oc-hint">
+            未识别到常见教学软件。如果这台机器确实装了（比如希沃白板），点上面的
+            「重新扫描教学软件」再试一次；仍识别不到说明软件不是标准安装方式装的。
+          </div>
+        ) : (
+          <div className="oc-list">
+            {apps.map((app) => (
+              <div className="oc-list-row" key={`${app.kind}-${app.name}`}>
+                <div className="oc-list-main">
+                  <div className="oc-list-title">
+                    {app.name}
+                    <span className="oc-level safe" style={{ marginLeft: 8 }}>
+                      {app.kind}
+                    </span>
+                  </div>
+                  <div className="oc-list-sub">版本：{app.version || '未知'}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="oc-panel" style={{ marginTop: 14 }}>
+        <div className="oc-panel-title">课堂场景速查</div>
+        <div className="oc-hint">
+          <b>投屏没画面</b>：按 Win+P 切到「复制」；仍无画面就检查 HDMI/VGA 线与投影仪输入源
+          <br />
+          <b>触摸点不准</b>：点「触摸校准」，按十字光标依次点完即可（校准数据按显示器保存）
+          <br />
+          <b>改了设置重启就复原</b>：说明这台机器开了还原保护（冰点/影子系统），先解除保护再改
+          <br />
+          <b>白板软件闪退</b>：先在「教学软件清单」确认版本，再对照下面的已知问题库
+        </div>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <KbPanel />
+      </div>
+    </div>
+  )
+}
