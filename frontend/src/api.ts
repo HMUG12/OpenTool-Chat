@@ -39,6 +39,9 @@ export interface OcApi {
   list_repairs(): Promise<any[]>
   run_repair(key: string): Promise<any>
   export_report(): Promise<any>
+  analyze_cleanup(): Promise<any>
+  run_cleanup(keys: string[]): Promise<any>
+  run_netdiag(): Promise<any>
 
   // ── 系统监测（主页数据源） ──
   get_hardware(): Promise<HardwareInfo>
@@ -119,6 +122,9 @@ const MOCK_API: OcApi = {
   async list_repairs() { return [] },
   async run_repair() { return { ok: false, message: '开发预览模式：无法执行修复', restart: false } },
   async export_report() { return { ok: false, path: '', content: '开发预览模式：无法导出报告' } },
+  async analyze_cleanup() { return { items: [], total: 0 } },
+  async run_cleanup() { return { ok: false, freed: 0, details: ['开发预览模式：无法执行清理'] } },
+  async run_netdiag() { return { items: [], okCount: 0, total: 0, healthy: false } },
   async get_hardware() { return EMPTY_HARDWARE },
   async get_metrics() {
     return {

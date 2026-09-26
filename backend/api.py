@@ -153,6 +153,24 @@ class Api:
 
         return export()
 
+    def analyze_cleanup(self) -> dict[str, Any]:
+        """统计可清理项及真实占用。"""
+        from .core.cleanup import analyze
+
+        return analyze()
+
+    def run_cleanup(self, keys: list[str]) -> dict[str, Any]:
+        """执行清理，返回真实释放量。"""
+        from .core.cleanup import run
+
+        return run(keys)
+
+    def run_netdiag(self) -> dict[str, Any]:
+        """网络分步诊断（本机 / 网关 / DNS / 外网）。"""
+        from .core.netdiag import run_diagnostics
+
+        return run_diagnostics()
+
     def launch_tool(self, tool_id: str, file_path: str | None = None) -> dict[str, Any]:
         spec = registry.get(tool_id)
         if spec is None:
